@@ -277,14 +277,19 @@ fastify.post("/update-status", async (req, reply) => {
   let query = "UPDATE appointments SET status=$1, updated_at=NOW()";
   const params = [status];
 
-  if (cancel_reason) {
-    params.push(cancel_reason);
-    query += `, cancel_reason = $${params.length}`;
-  }
-
-  if (suggestion) {
-    params.push(suggestion);
-    query += `, suggestion = $${params.length}`;
+  // 🧹 Clear cancellation fields if confirming
+  if (status === 'CONFIRMED') {
+    query += `, cancel_reason = NULL, suggestion = NULL`;
+  } else {
+    // Only update if provided (for other statuses)
+    if (cancel_reason) {
+      params.push(cancel_reason);
+      query += `, cancel_reason = $${params.length}`;
+    }
+    if (suggestion) {
+      params.push(suggestion);
+      query += `, suggestion = $${params.length}`;
+    }
   }
 
   params.push(appointment_id);
