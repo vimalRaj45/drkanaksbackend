@@ -273,15 +273,15 @@ fastify.post("/update-status", async (req, reply) => {
     return { status: "error", message: "Unauthorized" };
   }
 
-  // Build dynamic update
+  // Build dynamic update (Initial Status change)
   let query = "UPDATE appointments SET status=$1, updated_at=NOW()";
   const params = [status];
 
-  // 🧹 Clear cancellation fields if confirming
+  // 1. Process Status change first
+  // If CONFIRMED, we clear the permanent cancel fields, but we might have a TEMPORARY note
   if (status === 'CONFIRMED') {
     query += `, cancel_reason = NULL, suggestion = NULL`;
   } else {
-    // Only update if provided (for other statuses)
     if (cancel_reason) {
       params.push(cancel_reason);
       query += `, cancel_reason = $${params.length}`;
@@ -307,9 +307,11 @@ fastify.post("/update-status", async (req, reply) => {
   if (updatedApt.user_id) {
     try {
       const subs = await pool.query("SELECT * FROM subscriptions WHERE user_id = $1", [updatedApt.user_id]);
+      
+      const note = status === 'CONFIRMED' ? (suggestion || '') : (suggestion ? 'Suggested: ' + suggestion : '');
       const payload = JSON.stringify({
         title: "Appointment Update",
-        body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${suggestion ? 'Suggested: ' + suggestion : ''}`,
+        body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${note}`,
         url: "https://dr-kanaks-clinic.netlify.app"
       });
 

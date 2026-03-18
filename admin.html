@@ -352,16 +352,31 @@
                 showCancelButton: true,
                 confirmButtonColor: 'var(--danger)',
                 preConfirm: () => {
-                    return [
-                        document.getElementById('swal-input1').value,
-                        document.getElementById('swal-input2').value
-                    ]
+                    const reason = document.getElementById('swal-input1').value;
+                    if (!reason) return Swal.showValidationMessage('A reason is required to cancel');
+                    return [reason, document.getElementById('swal-input2').value]
                 }
             });
 
             if (!formValues) return;
             payload.cancel_reason = formValues[0];
             payload.suggestion = formValues[1];
+        } else if (status === 'CONFIRMED') {
+            // For Confirmation, we also want a small note/reason if they were previously cancelled
+            const { value: confirmMsg } = await Swal.fire({
+                title: 'Confirm Appointment',
+                input: 'textarea',
+                inputLabel: 'Reason or Confirmation Note (Required)',
+                inputPlaceholder: 'e.g. Doctor is now available at the same time.',
+                showCancelButton: true,
+                inputValidator: (value) => {
+                    if (!value) return 'Please provide a note for the confirmation!';
+                }
+            });
+
+            if (!confirmMsg) return;
+            // We use 'suggestion' column to store the "Why I approved" message temporarily for the push
+            payload.suggestion = confirmMsg; 
         }
 
         const result = await fetch(`${API_BASE}/update-status`, {
