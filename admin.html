@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Admin | Premium Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #60a5fa;
+            --accent: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Hero / Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            filter: brightness(1.1);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.02);
+            border-color: var(--primary-light);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        /* Main Content */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        .table-container {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1.2rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td:first-child { border-left: 1px solid var(--glass-border); border-radius: 12px 0 0 12px; }
+        td:last-child { border-right: 1px solid var(--glass-border); border-radius: 0 12px 12px 0; }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-PENDING { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .status-CONFIRMED { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .status-CANCELLED { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border: none;
+            color: white;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            transition: 0.3s;
+        }
+
+        .action-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
+
+        /* Chart Section */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .panel-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 24px;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        /* Loading Animation */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: block;
+            margin: 20px auto;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <header>
+        <div class="logo">CLINIC PRIME ADMIN</div>
+        <div class="admin-controls">
+            <input type="password" id="adminToken" placeholder="Admin Token" value="CHANGE_THIS_SECRET">
+            <button class="refresh-btn" onclick="refreshDashboard()">Refresh Data</button>
+        </div>
+    </header>
+
+    <div class="stats-grid" id="statsContainer">
+        <div class="stat-card">
+            <h3>Today's Bookings</h3>
+            <div class="value" id="statToday">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Appointments</h3>
+            <div class="value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Confirmation</h3>
+            <div class="value" id="statPending" style="color: var(--warning)">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Confirmed Status</h3>
+            <div class="value" id="statConfirmed" style="color: var(--accent)">0</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="table-container">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-weight: 600;">Recent Appointments</h2>
+                <div style="display:flex; gap: 1rem;">
+                    <input type="text" id="searchInput" placeholder="Search name/phone..." oninput="fetchAppointments()">
+                    <input type="date" id="dateFilter" onchange="fetchAppointments()">
+                </div>
+            </div>
+            <table id="appointmentsTable">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Patient</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="appointmentRows">
+                    <!-- Data will be injected here -->
+                </tbody>
+            </table>
+            <div id="loader" class="hidden"><span class="loader"></span></div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel-card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Service Popularity</h3>
+                <canvas id="serviceChart"></canvas>
+            </div>
+            <div class="panel-card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Weekly Growth</h3>
+                <canvas id="weeklyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:3000";
+    let serviceChartInstance = null;
+    let weeklyChartInstance = null;
+
+    async function apiGet(endpoint, params = {}) {
+        const token = document.getElementById('adminToken').value;
+        const query = new URLSearchParams({ ...params, admin_token: token }).toString();
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}?${query}`);
+            if (res.status === 401) {
+                Swal.fire('Unauthorized', 'Please check your admin token', 'error');
+                return null;
+            }
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    async function updateStatus(id, status) {
+        const token = document.getElementById('adminToken').value;
+        
+        let payload = { appointment_id: id, status, admin_token: token };
+
+        if (status === 'CANCELLED') {
+            const { value: formValues } = await Swal.fire({
+                title: 'Cancel Appointment',
+                html:
+                    '<label style="display:block; margin:10px 0 5px; text-align:left; color:#333;">Reason for Cancellation</label>' +
+                    '<textarea id="swal-input1" class="swal2-textarea" placeholder="e.g. Doctor unavailable" style="margin:5px 0;"></textarea>' +
+                    '<label style="display:block; margin:10px 0 5px; text-align:left; color:#333;">Suggest Alternative Date (Optional)</label>' +
+                    '<input type="date" id="swal-input2" class="swal2-input" style="margin:5px 0;">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger)',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-input1').value,
+                        document.getElementById('swal-input2').value
+                    ]
+                }
+            });
+
+            if (!formValues) return;
+            payload.cancel_reason = formValues[0];
+            payload.suggestion = formValues[1];
+        }
+
+        const result = await fetch(`${API_BASE}/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await result.json();
+        if (data.status === 'success') {
+            Swal.fire('Updated', `Appointment is now ${status}`, 'success');
+            refreshDashboard();
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    }
+
+    async function fetchStats() {
+        const res = await apiGet('/admin/stats');
+        if (!res) return;
+
+        const { summary, by_service, weekly_trend } = res.data;
+        
+        document.getElementById('statTotal').innerText = summary.total;
+        document.getElementById('statToday').innerText = summary.today;
+        document.getElementById('statPending').innerText = summary.pending;
+        document.getElementById('statConfirmed').innerText = summary.confirmed;
+
+        updateCharts(by_service, weekly_trend);
+    }
+
+    async function fetchAppointments() {
+        const search = document.getElementById('searchInput').value;
+        const date = document.getElementById('dateFilter').value;
+        const loader = document.getElementById('loader');
+        const list = document.getElementById('appointmentRows');
+        
+        loader.classList.remove('hidden');
+        list.innerHTML = '';
+
+        const res = await apiGet('/appointments', { search, date });
+        loader.classList.add('hidden');
+
+        if (!res || !res.data) return;
+
+        res.data.forEach(apt => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div style="font-weight:600">${apt.date}</div>
+                    <div style="font-size:0.85rem; color:#94a3b8">${apt.time}</div>
+                </td>
+                <td>
+                    <div style="font-weight:600">${apt.name}</div>
+                    <div style="font-size:0.85rem; color:#94a3b8">${apt.phone}</div>
+                </td>
+                <td style="font-size:0.9rem">
+                    ${apt.service}
+                    ${apt.cancel_reason ? `<div style="color:var(--danger); font-size:0.75rem; margin-top:5px;">Reason: ${apt.cancel_reason}</div>` : ''}
+                    ${apt.suggestion ? `<div style="color:var(--primary-light); font-size:0.75rem;">Suggest: ${apt.suggestion}</div>` : ''}
+                </td>
+                <td><span class="status-badge status-${apt.status}">${apt.status}</span></td>
+                <td>
+                    ${apt.status === 'PENDING' ? 
+                        `<button class="action-btn" onclick="updateStatus('${apt.id}', 'CONFIRMED')" style="background:var(--accent)">Confirm</button>` : ''
+                    }
+                    <button class="action-btn" onclick="updateStatus('${apt.id}', 'CANCELLED')" style="background:var(--danger)">Cancel</button>
+                </td>
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    function updateCharts(services, weekly) {
+        const sCtx = document.getElementById('serviceChart').getContext('2d');
+        if (serviceChartInstance) serviceChartInstance.destroy();
+        serviceChartInstance = new Chart(sCtx, {
+            type: 'doughnut',
+            data: {
+                labels: services.map(s => s.service),
+                datasets: [{
+                    data: services.map(s => s.count),
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                    borderWidth: 0
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } } }
+        });
+
+        const wCtx = document.getElementById('weeklyChart').getContext('2d');
+        if (weeklyChartInstance) weeklyChartInstance.destroy();
+        weeklyChartInstance = new Chart(wCtx, {
+            type: 'line',
+            data: {
+                labels: weekly.map(w => w.date),
+                datasets: [{
+                    label: 'Bookings',
+                    data: weekly.map(w => w.count),
+                    borderColor: '#60a5fa',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(96, 165, 250, 0.1)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display : false }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function refreshDashboard() {
+        fetchStats();
+        fetchAppointments();
+    }
+
+    refreshDashboard();
+</script>
+
+</body>
+</html>
