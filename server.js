@@ -2,6 +2,8 @@ const fastify = require("fastify")({ logger: true });
 const { Pool } = require("pg");
 const { v4: uuidv4 } = require("uuid");
 const webpush = require("web-push");
+const path = require("path");
+const fs = require("fs");
 
 // 🔐 CONFIG
 const ADMIN_TOKEN = "CHANGE_THIS_SECRET";
@@ -364,6 +366,13 @@ fastify.post("/subscribe", async (req, reply) => {
     reply.status(500);
     return { status: "error", message: "Internal server error connecting to DB" };
   }
+});
+
+// 8. SERVE ADMIN PAGE
+fastify.get("/admin-panel", async (req, reply) => {
+  const filePath = path.join(__dirname, "admin.html");
+  const content = fs.readFileSync(filePath, "utf8");
+  reply.type("text/html").send(content);
 });
 
 /* ---------------- START SERVER ---------------- */

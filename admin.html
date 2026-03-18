@@ -425,10 +425,12 @@
                 </td>
                 <td><span class="status-badge status-${apt.status}">${apt.status}</span></td>
                 <td>
-                    ${apt.status === 'PENDING' ? 
+                    ${apt.status !== 'CONFIRMED' ? 
                         `<button class="action-btn" onclick="updateStatus('${apt.id}', 'CONFIRMED')" style="background:var(--accent)">Confirm</button>` : ''
                     }
-                    <button class="action-btn" onclick="updateStatus('${apt.id}', 'CANCELLED')" style="background:var(--danger)">Cancel</button>
+                    ${apt.status !== 'CANCELLED' ? 
+                        `<button class="action-btn" onclick="updateStatus('${apt.id}', 'CANCELLED')" style="background:var(--danger)">Cancel</button>` : ''
+                    }
                 </td>
             `;
             list.appendChild(row);
