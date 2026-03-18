@@ -305,7 +305,7 @@ fastify.post("/update-status", async (req, reply) => {
       const payload = JSON.stringify({
         title: "Appointment Update",
         body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${suggestion ? 'Suggested: ' + suggestion : ''}`,
-        url: "/appointments"
+        url: "https://dr-kanaks-clinic.netlify.app"
       });
 
       const pushPromises = subs.rows.map(s => 
