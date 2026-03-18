@@ -296,28 +296,30 @@ fastify.post("/update-status", async (req, reply) => {
 
   const updatedApt = result.rows[0];
 
-  // 🚀 SEND PUSH NOTIFICATION
-  try {
-    const subs = await pool.query("SELECT * FROM subscriptions");
-    const payload = JSON.stringify({
-      title: "Appointment Update",
-      body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${suggestion ? 'Suggested: ' + suggestion : ''}`,
-      url: "/appointments"
-    });
+  // 🚀 SEND TARGETED PUSH NOTIFICATION
+  if (updatedApt.user_id) {
+    try {
+      const subs = await pool.query("SELECT * FROM subscriptions WHERE user_id = $1", [updatedApt.user_id]);
+      const payload = JSON.stringify({
+        title: "Appointment Update",
+        body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${suggestion ? 'Suggested: ' + suggestion : ''}`,
+        url: "/appointments"
+      });
 
-    const pushPromises = subs.rows.map(s => 
-      webpush.sendNotification(s.data, payload).catch(err => {
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          // Stale subscription, remove it
-          return pool.query("DELETE FROM subscriptions WHERE id = $1", [s.id]);
-        }
-        console.error("Push Error:", err);
-      })
-    );
+      const pushPromises = subs.rows.map(s => 
+        webpush.sendNotification(s.data, payload).catch(err => {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            // Stale subscription, remove it
+            return pool.query("DELETE FROM subscriptions WHERE id = $1", [s.id]);
+          }
+          console.error("Push Error for user", updatedApt.user_id, err);
+        })
+      );
 
-    await Promise.all(pushPromises);
-  } catch (pushErr) {
-    console.error("Critical Push Error:", pushErr);
+      await Promise.all(pushPromises);
+    } catch (pushErr) {
+      console.error("Critical Push Error:", pushErr);
+    }
   }
 
   return { 
@@ -327,33 +329,36 @@ fastify.post("/update-status", async (req, reply) => {
   };
 });
 
-// 7. WEB PUSH SUBSCRIBE (Corrected for Data Column)
+// 7. WEB PUSH SUBSCRIBE (Updated for Targeted Notifications)
 fastify.post("/subscribe", async (req, reply) => {
+  const { userId, subscription } = req.body;
+  
   // Support both { subscription: {...} } and direct {...subscription} from React
-  const sub = req.body.subscription || req.body;
+  const sub = subscription || req.body;
+  const targetId = userId || req.body.userId;
 
-  if (!sub || !sub.endpoint) {
-    req.log.error({ body: req.body }, "Missing endpoint in subscription attempt");
+  if (!sub || !sub.endpoint || !targetId) {
+    req.log.error({ body: req.body }, "Missing endpoint or userId in subscription attempt");
     reply.status(400);
-    return { status: "error", message: "Invalid subscription: missing endpoint" };
+    return { status: "error", message: "Invalid subscription: missing endpoint or userId" };
   }
 
   try {
-    // 🔍 Prevent duplicates by checking endpoint in JSONB 'data' column
+    // 🔍 Check if this specific device already exists for this user
     const existing = await pool.query(
-      "SELECT * FROM subscriptions WHERE data->>'endpoint' = $1",
-      [sub.endpoint]
+      "SELECT * FROM subscriptions WHERE user_id = $1 AND data->>'endpoint' = $2",
+      [targetId, sub.endpoint]
     );
 
     if (existing.rowCount === 0) {
       await pool.query(
-        "INSERT INTO subscriptions (data) VALUES ($1)",
-        [sub]
+        "INSERT INTO subscriptions (user_id, data) VALUES ($1, $2)",
+        [targetId, sub]
       );
-      return { status: "success", message: "New subscription added" };
+      return { status: "success", message: "Subscription linked to user: " + targetId };
     }
 
-    return { status: "success", message: "Already subscribed" };
+    return { status: "success", message: "Device already linked to this user" };
   } catch (err) {
     req.log.error(err, "Subscription Storage Error");
     reply.status(500);
@@ -363,7 +368,16 @@ fastify.post("/subscribe", async (req, reply) => {
 
 /* ---------------- START SERVER ---------------- */
 
-fastify.listen({ port: 3000 }, (err) => {
-  if (err) throw err;
-  console.log("🚀 Server running on http://localhost:3000");
-});
+fastify.listen(
+  {
+    port: process.env.PORT || 3000,
+    host: "0.0.0.0"
+  },
+  (err, address) => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    console.log(`🚀 Server running on ${address}`);
+  }
+);
