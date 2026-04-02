@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Kanak's | Clinical Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --primary: #863bff;
+            --secondary: #14b8a6;
+            --accent: #f43f5e;
+            --bg-dark: #020617;
+            --card-bg: rgba(15, 23, 42, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-dark); color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
+
+        .layout { display: flex; transition: 0.3s; }
+
+        /* Mobile Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #020617;
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: fixed;
+            left: -280px;
+            top: 0;
+            z-index: 1000;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .sidebar.open { left: 0; }
+
+        @media (min-width: 1024px) {
+            .sidebar { position: sticky; left: 0; }
+            .content { padding-left: 2rem; }
+            .mobile-toggle { display: none; }
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--primary); }
+
+        .nav-item {
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 12px;
+            transition: 0.2s;
+        }
+
+        .nav-item.active { background: var(--primary); color: white; }
+        .nav-item i { width: 18px; height: 18px; }
+
+        /* Main Content */
+        .content { flex: 1; padding: 1.5rem; max-width: 1600px; margin: 0 auto; width: 100%; transition: 0.3s; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .mobile-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 0.7rem; border-radius: 12px; cursor: pointer; color: white; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
+        .stat-card h3 { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; }
+        .stat-card .val { font-size: 1.8rem; font-weight: 800; }
+
+        /* Data Section */
+        .data-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 1.5rem; overflow-x: auto; margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; border-bottom: 1px solid var(--border); }
+        td { padding: 1.2rem 1rem; border-bottom: 1px solid var(--border); }
+
+        .badge { padding: 0.4rem 0.8rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+        .bg-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .bg-confirmed { background: rgba(20, 184, 166, 0.1); color: #14b8a6; }
+        .bg-cancelled { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+
+        .btn-action { 
+            width: 36px; height: 36px; border-radius: 10px; 
+            border: 1px solid var(--border); background: #0f172a; 
+            color: white; cursor: pointer; transition: 0.3s;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-action:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-2px); }
+
+        .auth-bar { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
+        input { background: #0f172a; border: 1px solid var(--border); color: white; padding: 0.6rem 1rem; border-radius: 12px; width: 100%; outline: none; }
+        input:focus { border-color: var(--primary); }
+
+        @media (max-width: 640px) {
+            .stat-card .val { font-size: 1.5rem; }
+            header h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">DR. KANAK'S <span>PRIME</span></div>
+        <nav style="display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem;">
+            <a href="#" class="nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="#" class="nav-item"><i data-lucide="users"></i> Patient Queue</a>
+            <a href="#" class="nav-item"><i data-lucide="bar-chart-3"></i> Financials</a>
+            <a href="#" class="nav-item"><i data-lucide="settings"></i> Settings</a>
+        </nav>
+        <div class="auth-bar">
+            <input type="password" id="adminToken" value="CHANGE_THIS_SECRET" placeholder="Token">
+        </div>
+    </aside>
+
+    <div class="content" id="mainContent" onclick="closeSidebarOnMobile()">
+        <header>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="mobile-toggle" onclick="event.stopPropagation(); toggleSidebar()"><i data-lucide="menu"></i></button>
+                <h1 style="font-weight: 800; letter-spacing: -0.5px;">Clinical Dashboard</h1>
+            </div>
+            <button onclick="refreshData()" style="padding: 0.7rem 1.4rem; background: var(--primary); border: none; border-radius: 12px; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="rotate-cw" style="width: 16px;"></i> <span class="d-none sm-block">Sync</span>
+            </button>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card"><h3>Medical Matrix</h3><div class="val" id="statTotal">0</div></div>
+            <div class="stat-card"><h3>Active Today</h3><div class="val" id="statToday">0</div></div>
+            <div class="stat-card"><h3>Conf. Rate</h3><div class="val" id="statConfirmed" style="color: var(--secondary)">0</div></div>
+            <div class="stat-card"><h3>Financials</h3><div class="val" id="statRevenue">₹0</div></div>
+        </div>
+
+        <div class="data-section">
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="date" id="dateFilter" onchange="fetchAppointments()" style="max-width: 180px;">
+                <input type="text" id="searchInput" placeholder="Search Patients..." oninput="fetchAppointments()" style="flex: 1; min-width: 200px;">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Schedule</th>
+                        <th>Patient Identity</th>
+                        <th>Status</th>
+                        <th>Operations</th>
+                    </tr>
+                </thead>
+                <tbody id="listBody"></tbody>
+            </table>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+            <div class="stat-card" style="min-height: 300px;"><canvas id="growthChart"></canvas></div>
+            <div class="stat-card" style="min-height: 300px;"><canvas id="mixChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    const API_BASE = window.location.origin;
+    let growthChart = null, mixChart = null;
+
+    function toggleSidebar() { 
+        document.getElementById('sidebar').classList.toggle('open'); 
+        document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
+    }
+
+    function closeSidebarOnMobile() {
+        if (window.innerWidth < 1024) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    }
+
+    async function apiCall(endpoint, params = {}) {
+        const token = document.getElementById('adminToken').value;
+        const query = new URLSearchParams({ ...params, admin_token: token }).toString();
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}?${query}`);
+            if (res.status === 401) {
+                Swal.fire('Auth Required', 'Please enter a valid admin token in the sidebar.', 'warning');
+                return null;
+            }
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    async function refreshData() {
+        const stats = await apiCall('/admin/stats');
+        if(stats && stats.data) {
+            const { summary, by_service, weekly_trend } = stats.data;
+            document.getElementById('statTotal').innerText = summary.total;
+            document.getElementById('statToday').innerText = summary.today;
+            document.getElementById('statConfirmed').innerText = summary.confirmed;
+            document.getElementById('statRevenue').innerText = `₹${summary.confirmed * 100}`;
+            renderCharts(by_service, weekly_trend);
+        }
+        fetchAppointments();
+    }
+
+    async function fetchAppointments() {
+        const search = document.getElementById('searchInput').value;
+        const date = document.getElementById('dateFilter').value;
+        const res = await apiCall('/appointments', { search, date, limit: 20 });
+        const body = document.getElementById('listBody');
+        body.innerHTML = '';
+        if(res && res.data) {
+            res.data.forEach(apt => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div style="font-weight:800; font-size:0.95rem;">${apt.date}</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted)">${apt.time}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:700">${apt.name}</div>
+                        <div style="font-size:0.75rem; color:var(--primary-light)">PID-${apt.id.slice(-8)}</div>
+                        <div style="font-size:0.7rem; opacity:0.6">${apt.phone}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-${apt.status.toLowerCase()}">${apt.status}</span>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:4px;">
+                            <button class="btn-action" title="Approve" onclick="updateStatus('${apt.id}','CONFIRMED')"><i data-lucide="check-circle-2"></i></button>
+                            <button class="btn-action" title="Cancel" onclick="updateStatus('${apt.id}','CANCELLED')"><i data-lucide="x-circle"></i></button>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+    }
+
+    async function updateStatus(id, status) {
+        const token = document.getElementById('adminToken').value;
+        let payload = { appointment_id: id, status, admin_token: token };
+
+        if (status === 'CANCELLED') {
+            const { value: reason } = await Swal.fire({
+                title: 'Cancellation',
+                input: 'textarea',
+                inputLabel: 'Reason for cancellation',
+                showCancelButton: true
+            });
+            if (reason) payload.cancel_reason = reason;
+            else return;
+        }
+
+        const res = await fetch(`${API_BASE}/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            Swal.fire({ icon: 'success', title: 'Updated', timer: 1000, showConfirmButton: false });
+            refreshData();
+        }
+    }
+
+    function renderCharts(services, weekly) {
+        const gCtx = document.getElementById('growthChart').getContext('2d');
+        if (growthChart) growthChart.destroy();
+        growthChart = new Chart(gCtx, {
+            type: 'line',
+            data: {
+                labels: weekly.map(w => w.date),
+                datasets: [{
+                    label: 'Clinical Load',
+                    data: weekly.map(w => w.count),
+                    borderColor: '#863bff',
+                    backgroundColor: 'rgba(134, 59, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } }
+        });
+
+        const mCtx = document.getElementById('mixChart').getContext('2d');
+        if (mixChart) mixChart.destroy();
+        mixChart = new Chart(mCtx, {
+            type: 'doughnut',
+            data: {
+                labels: services.map(s => s.service),
+                datasets: [{
+                    data: services.map(s => s.count),
+                    backgroundColor: ['#863bff', '#14b8a6', '#f43f5e', '#f59e0b', '#0ea5e9'],
+                    borderWidth: 0
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } } }
+        });
+    }
+
+    refreshData();
+</script>
+
+</body>
+</html>
