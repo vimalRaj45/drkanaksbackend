@@ -583,7 +583,14 @@ fastify.post("/update-status", async (req, reply) => {
       const payload = JSON.stringify({
         title: "Appointment Update",
         body: `Hi ${updatedApt.name}, your appointment status is now ${status}. ${note}`,
-        url: "https://dr-kanaks-clinic.netlify.app"
+        url: "https://drkanaks.com/profile",
+        icon: "https://drkanaks.com/icon-192.png",
+        badge: "https://drkanaks.com/badge.png",
+        data: { patientName: updatedApt.name },
+        actions: [
+          { action: 'view-profile', title: 'View Status' },
+          { action: 'book-new', title: 'New Slot' }
+        ]
       });
 
       const pushPromises = subs.rows.map(s =>
@@ -636,7 +643,7 @@ fastify.get("/settings", async (req, reply) => {
 fastify.get("/api/active-slots", async () => {
   const result = await pool.query("SELECT value FROM settings WHERE key = 'available_slots'");
   if (result.rows.length === 0) {
-    const defaults = ["10:30 AM", "11:30 AM", "12:30 PM", "02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM"].map(t => ({ time: t, limit: 10 }));
+    const defaults = ["10:30 AM", "11:30 AM", "12:30 PM", "02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM"].map(t => ({ time: t, limit: 30 }));
     return { status: "success", data: defaults };
   }
   return { status: "success", data: JSON.parse(result.rows[0].value) };
@@ -731,7 +738,13 @@ fastify.post("/broadcast-push", async (req, reply) => {
     const payload = JSON.stringify({
       title: title,
       body: body,
-      url: url || "https://dr-kanaks-clinic.netlify.app"
+      url: url || "https://drkanaks.com/profile",
+      icon: "https://drkanaks.com/icon-192.png",
+      badge: "https://drkanaks.com/badge.png",
+      image: "https://drkanaks.com/follicle.jpg",
+      actions: [
+        { action: 'view-profile', title: 'Check Profile' }
+      ]
     });
 
     // 3. Send notifications in parallel
