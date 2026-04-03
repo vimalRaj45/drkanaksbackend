@@ -747,28 +747,36 @@ fastify.post("/broadcast-push", async (req, reply) => {
       ]
     });
 
-    // 3. Send notifications in parallel
-    const sendPromises = subs.map(s => 
-      webpush.sendNotification(s.data, payload).catch(err => {
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          // Stale subscription, remove it
-          return pool.query("DELETE FROM subscriptions WHERE id = $1", [s.id]);
-        }
-        console.error("Broadcast push error for sub ID:", s.id, err);
-      })
-    );
+    // 3. Optimized Scalable Broadcast (Concurrency Limited)
+    const CONCURRENCY_LIMIT = 50; 
+    let successCount = 0;
+    let failureCount = 0;
 
-    await Promise.all(sendPromises);
+    for (let i = 0; i < subs.length; i += CONCURRENCY_LIMIT) {
+      const batch = subs.slice(i, i + CONCURRENCY_LIMIT);
+      const batchPromises = batch.map(s => 
+        webpush.sendNotification(s.data, payload)
+          .then(() => { successCount++; })
+          .catch(err => {
+            failureCount++;
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              return pool.query("DELETE FROM subscriptions WHERE id = $1", [s.id]);
+            }
+          })
+      );
+      await Promise.all(batchPromises);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
     return { 
       status: "success", 
-      message: `Successfully broadcasted to ${subs.length} devices`,
-      count: subs.length 
+      message: `Transmission complete: ${successCount} reached, ${failureCount} failed/cleaned.`,
+      stats: { success: successCount, failure: failureCount, total: subs.length }
     };
   } catch (err) {
     req.log.error(err, "Broadcast Push Failure");
     reply.status(500);
-    return { status: "error", message: "Internal server error during broadcast" };
+    return { status: "error", message: "Internal server error during broadcast transmission" };
   }
 });
 
