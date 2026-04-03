@@ -652,6 +652,27 @@ fastify.get("/api/queue-stats/:date", async (req) => {
   return { status: "success", count: parseInt(result.rows[0].count) };
 });
 
+// 6.2.3 BROADCAST API
+fastify.get("/api/broadcast", async () => {
+  const result = await pool.query("SELECT value FROM settings WHERE key = 'active_broadcast'");
+  if (result.rows.length === 0) return { status: "success", data: null };
+  return { status: "success", data: JSON.parse(result.rows[0].value) };
+});
+
+fastify.post("/api/broadcast", async (req, reply) => {
+  const { message, type, admin_token } = req.body;
+  if (admin_token !== process.env.ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+  const value = JSON.stringify({ message, type, timestamp: new Date().toISOString() });
+  await pool.query(
+    "INSERT INTO settings (key, value) VALUES ('active_broadcast', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+    [value]
+  );
+  return { status: "success", message: "Broadcast sent" };
+});
+
 // 6.3 UPDATE SETTINGS
 fastify.post("/settings", async (req, reply) => {
   const { key, value, admin_token } = req.body;

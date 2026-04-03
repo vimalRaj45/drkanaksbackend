@@ -48,7 +48,7 @@ async function setupPushNotifications() {
 
         // Get or Create Subscription
         let subscription = await registration.pushManager.getSubscription();
-        
+
         if (!subscription) {
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
@@ -59,7 +59,7 @@ async function setupPushNotifications() {
         console.log('Push Subscription Object:', JSON.stringify(subscription));
 
         // Send to Backend
-        const response = await fetch('http://localhost:3000/subscribe', {
+        const response = await fetch('https://drkanaksbackend.onrender.com/subscribe', {
             method: 'POST',
             body: JSON.stringify({ subscription }),
             headers: { 'Content-Type': 'application/json' }

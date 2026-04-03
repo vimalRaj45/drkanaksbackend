@@ -187,11 +187,28 @@
                 </div>
             </div>
 
-            <div style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--border);">
-                    <button onclick="saveAllSettings()" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4);">
-                        SAVE GLOBAL CLINICAL RULES
-                    </button>
+            <div class="stat-card" style="max-width:800px; margin-top:2rem; border:1px solid rgba(134,59,255,0.3); background:rgba(134,59,255,0.02);">
+                <h3 style="margin-bottom:1.5rem; color:var(--primary); display:flex; align-items:center; gap:8px;"><i data-lucide="radio"></i> Global Patient Outreach</h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Send a live notification to all patients currently on the website. Use this for clinic announcements or testimonial requests.</p>
+                
+                <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
+                    <input type="text" id="broadcastMsg" placeholder="e.g. Please share your experience with us!" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:1rem; border-radius:14px; outline:none; font-weight:600;">
+                    <button onclick="sendManualBroadcast()" style="background:var(--primary); color:white; border:none; padding:0 24px; border-radius:14px; font-weight:800; cursor:pointer;">BROADCAST</button>
                 </div>
+
+                <div style="margin-top:1.5rem; display:flex; gap:10px;">
+                    <button onclick="sendReviewRequest()" style="background:rgba(20,184,166,0.1); color:#14b8a6; border:1px solid #14b8a6; padding:0.8rem 1.5rem; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:6px;">
+                        <i data-lucide="star" style="width:14px;"></i> QUICK REVIEW REQUEST (AUTO-NAVIGATE)
+                    </button>
+                    <button onclick="clearBroadcast()" style="background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid var(--border); padding:0.8rem 1.5rem; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.75rem;">CLEAR ACTIVE ALERT</button>
+                </div>
+            </div>
+
+            <div style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--border);">
+                <button onclick="saveAllSettings()" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4);">
+                    SAVE GLOBAL CLINICAL RULES
+                </button>
+            </div>
             </div>
         </div>
 
@@ -496,6 +513,27 @@
             value: JSON.stringify(localSlots)
         });
         Swal.fire({ icon:'success', title:'Global Settings Saved', text:'Settings updated.' });
+    }
+
+    async function sendManualBroadcast() {
+        const msg = document.getElementById('broadcastMsg').value;
+        if(!msg) return;
+        await apiCall('/broadcast', 'POST', { message: msg, type: 'MANUAL', admin_token: "CHANGE_THIS_SECRET" });
+        Swal.fire({ icon:'success', title:'Broadcast Sent', text:'Live notification pushed to all patients.' });
+    }
+
+    async function sendReviewRequest() {
+        await apiCall('/broadcast', 'POST', { 
+            message: "We'd love to hear from you! Please share your feedback in our testimonials section.", 
+            type: 'REVIEW_REQUEST', 
+            admin_token: "CHANGE_THIS_SECRET" 
+        });
+        Swal.fire({ icon:'success', title:'Review Request Sent', text:'Patients will be guided to leave a review.' });
+    }
+
+    async function clearBroadcast() {
+        await apiCall('/broadcast', 'POST', { message: null, type: 'CLEAR', admin_token: "CHANGE_THIS_SECRET" });
+        Swal.fire({ icon:'info', title:'Broadcast Cleared', text:'Active notification removed.' });
     }
 
     function renderCharts(services, weekly) {
