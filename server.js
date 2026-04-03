@@ -64,6 +64,7 @@ async function dbInit() {
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,
         name TEXT NOT NULL,
         phone TEXT NOT NULL,
+        age TEXT,
         appointment_date DATE NOT NULL,
         appointment_time TIME NOT NULL,
         service TEXT DEFAULT 'General Consultation',
@@ -72,6 +73,10 @@ async function dbInit() {
         razorpay_order_id TEXT,
         razorpay_payment_id TEXT,
         status TEXT DEFAULT 'PENDING',
+        token TEXT,
+        message TEXT,
+        consultation_notes TEXT,
+        vitals JSONB DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -99,6 +104,11 @@ async function dbInit() {
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         data JSONB NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
       );
     `);
 
@@ -143,6 +153,10 @@ async function dbInit() {
       ["status", "TEXT DEFAULT 'PENDING'"],
       ["cancel_reason", "TEXT"], // preserved from previous code for safety
       ["suggestion", "TEXT"],    // preserved from previous code for safety
+      ["token", "TEXT"],
+      ["message", "TEXT"],
+      ["consultation_notes", "TEXT"],
+      ["vitals", "JSONB DEFAULT '{}'"],
       ["updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"]
     ];
 
@@ -181,6 +195,24 @@ function isValidTimeSlot(date, time) {
   if (selected < new Date(today.toDateString())) return false;
 
   return true;
+}
+
+function t12(time) {
+  if (!time) return "";
+  if (time.includes("AM") || time.includes("PM")) return time; // Already 12h
+  let [h, m] = time.split(":");
+  let suffix = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${suffix}`;
+}
+
+function generateSequenceToken(dateStr, count) {
+  // expects dateStr in YYYY-MM-DD
+  const [y, m, d] = dateStr.split('-');
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  const monthName = months[parseInt(m) - 1];
+  const yearShort = y.slice(-2);
+  return `${monthName}-${d}-${yearShort}-#${count + 1}`;
 }
 
 /* ---------------- ROUTES ---------------- */
@@ -421,45 +453,51 @@ fastify.get("/admin/stats", async (req, reply) => {
     return { status: "error", message: "Unauthorized" };
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
 
-  const queries = {
-    total: "SELECT COUNT(*) FROM appointments",
-    today: "SELECT COUNT(*) FROM appointments WHERE date = $1",
-    pending: "SELECT COUNT(*) FROM appointments WHERE status = 'PENDING'",
-    confirmed: "SELECT COUNT(*) FROM appointments WHERE status = 'CONFIRMED'",
-    by_service: "SELECT service, COUNT(*) as count FROM appointments GROUP BY service ORDER BY count DESC",
-    weekly_trend: `
-      SELECT date, COUNT(*) as count 
-      FROM appointments 
-      WHERE date >= CURRENT_DATE - INTERVAL '7 days' 
-      GROUP BY date 
-      ORDER BY date ASC
-    `
-  };
+    const queries = {
+      total: "SELECT COUNT(*) FROM appointments",
+      today: "SELECT COUNT(*) FROM appointments WHERE appointment_date = $1",
+      pending: "SELECT COUNT(*) FROM appointments WHERE status = 'PENDING'",
+      confirmed: "SELECT COUNT(*) FROM appointments WHERE status = 'CONFIRMED'",
+      by_service: "SELECT service, COUNT(*) as count FROM appointments GROUP BY service ORDER BY count DESC",
+      weekly_trend: `
+        SELECT appointment_date as date, COUNT(*) as count 
+        FROM appointments 
+        WHERE appointment_date::DATE >= (CURRENT_DATE - INTERVAL '14 days')
+        GROUP BY appointment_date 
+        ORDER BY appointment_date ASC
+      `
+    };
 
-  const [total, today, pending, confirmed, by_service, weekly] = await Promise.all([
-    pool.query(queries.total),
-    pool.query(queries.today, [todayStr]),
-    pool.query(queries.pending),
-    pool.query(queries.confirmed),
-    pool.query(queries.by_service),
-    pool.query(queries.weekly_trend)
-  ]);
+    const [total, today, pending, confirmed, by_service, weekly] = await Promise.all([
+      pool.query(queries.total),
+      pool.query(queries.today, [todayStr]),
+      pool.query(queries.pending),
+      pool.query(queries.confirmed),
+      pool.query(queries.by_service),
+      pool.query(queries.weekly_trend)
+    ]);
 
-  return {
-    status: "success",
-    data: {
-      summary: {
-        total: parseInt(total.rows[0].count),
-        today: parseInt(today.rows[0].count),
-        pending: parseInt(pending.rows[0].count),
-        confirmed: parseInt(confirmed.rows[0].count)
-      },
-      by_service: by_service.rows,
-      weekly_trend: weekly.rows
-    }
-  };
+    return {
+      status: "success",
+      data: {
+        summary: {
+          total: parseInt(total.rows[0].count || 0),
+          today: parseInt(today.rows[0].count || 0),
+          pending: parseInt(pending.rows[0].count || 0),
+          confirmed: parseInt(confirmed.rows[0].count || 0)
+        },
+        by_service: by_service.rows,
+        weekly_trend: weekly.rows
+      }
+    };
+  } catch (err) {
+    fastify.log.error(err, "[/admin/stats] Failure");
+    reply.status(500);
+    return { status: "error", message: err.message };
+  }
 });
 
 // 5.1 PUBLIC STATS (FOR HERO SECTION)
@@ -487,32 +525,42 @@ fastify.get("/public-stats", async () => {
   };
 });
 
-// 6. UPDATE STATUS (ADMIN)
+// 6. UPDATE STATUS & CLINICAL NOTES (ADMIN/DOCTOR)
 fastify.post("/update-status", async (req, reply) => {
-  const { appointment_id, status, admin_token, cancel_reason, suggestion } = req.body;
+  const { appointment_id, status, admin_token, cancel_reason, suggestion, consultation_notes, vitals } = req.body;
 
   if (admin_token !== ADMIN_TOKEN) {
     reply.status(401);
     return { status: "error", message: "Unauthorized" };
   }
 
-  // Build dynamic update (Initial Status change)
-  let query = "UPDATE appointments SET status=$1, updated_at=NOW()";
-  const params = [status];
+  // Build dynamic update
+  let query = "UPDATE appointments SET updated_at=NOW()";
+  const params = [];
 
-  // 1. Process Status change first
-  // If CONFIRMED, we clear the permanent cancel fields, but we might have a TEMPORARY note
-  if (status === 'CONFIRMED') {
-    query += `, cancel_reason = NULL, suggestion = NULL`;
-  } else {
-    if (cancel_reason) {
-      params.push(cancel_reason);
-      query += `, cancel_reason = $${params.length}`;
-    }
-    if (suggestion) {
-      params.push(suggestion);
-      query += `, suggestion = $${params.length}`;
-    }
+  if (status) {
+    params.push(status);
+    query += `, status = $${params.length}`;
+  }
+
+  if (consultation_notes !== undefined) {
+    params.push(consultation_notes);
+    query += `, consultation_notes = $${params.length}`;
+  }
+
+  if (vitals !== undefined) {
+    params.push(JSON.stringify(vitals));
+    query += `, vitals = $${params.length}`;
+  }
+
+  if (status === 'CANCELLED' && cancel_reason) {
+    params.push(cancel_reason);
+    query += `, cancel_reason = $${params.length}`;
+  }
+
+  if (suggestion) {
+    params.push(suggestion);
+    query += `, suggestion = $${params.length}`;
   }
 
   params.push(appointment_id);
@@ -559,6 +607,64 @@ fastify.post("/update-status", async (req, reply) => {
     message: status === 'CANCELLED' ? "Appointment cancelled with reason" : "Updated", 
     data: updatedApt 
   };
+});
+
+// 6.1 FETCH PATIENT HISTORY (FOR DOCTOR)
+fastify.get("/patient-history/:phone", async (req, reply) => {
+  const { phone } = req.params;
+  const { admin_token } = req.query;
+
+  if (admin_token !== ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+
+  const result = await pool.query(
+    "SELECT * FROM appointments WHERE phone = $1 ORDER BY appointment_date DESC",
+    [phone]
+  );
+  return { status: "success", data: result.rows };
+});
+
+// 6.2 GET SETTINGS
+fastify.get("/settings", async (req, reply) => {
+  const result = await pool.query("SELECT * FROM settings");
+  return { status: "success", data: result.rows };
+});
+
+// 6.2.1 GET PUBLIC SLOTS (FOR APPOINTMENT FORM)
+fastify.get("/api/active-slots", async () => {
+  const result = await pool.query("SELECT value FROM settings WHERE key = 'available_slots'");
+  if (result.rows.length === 0) {
+    const defaults = ["10:30 AM", "11:30 AM", "12:30 PM", "02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM"].map(t => ({ time: t, limit: 10 }));
+    return { status: "success", data: defaults };
+  }
+  return { status: "success", data: JSON.parse(result.rows[0].value) };
+});
+
+// 6.2.2 GET QUEUE STATUS (FOR PATIENT TRACKING)
+fastify.get("/api/queue-stats/:date", async (req) => {
+  const { date } = req.params;
+  const result = await pool.query(
+    "SELECT COUNT(*) FROM appointments WHERE appointment_date = $1 AND status = 'COMPLETED'",
+    [date]
+  );
+  return { status: "success", count: parseInt(result.rows[0].count) };
+});
+
+// 6.3 UPDATE SETTINGS
+fastify.post("/settings", async (req, reply) => {
+  const { key, value, admin_token } = req.body;
+  if (admin_token !== ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+
+  await pool.query(
+    "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+    [key, value]
+  );
+  return { status: "success", message: "Setting updated" };
 });
 
 // 7. WEB PUSH SUBSCRIBE (Updated for Targeted Notifications)
@@ -609,7 +715,7 @@ fastify.get("/admin-panel", async (req, reply) => {
 
 // POST /api/book  →  Create appointment + Razorpay order
 fastify.post("/api/book", async (req, reply) => {
-  const { name, phone, appointment_date, appointment_time } = req.body;
+  const { name, phone, appointment_date, appointment_time, service, message } = req.body;
 
   // --- Validate required fields ---
   if (!name || !phone || !appointment_date || !appointment_time) {
@@ -621,19 +727,31 @@ fastify.post("/api/book", async (req, reply) => {
   try {
     await client.query("BEGIN");
 
-    // 1. Check slot availability in time_slots
-    const slotRes = await client.query(
-      "SELECT * FROM time_slots WHERE slot_date = $1 AND slot_time = $2",
-      [appointment_date, appointment_time]
-    );
-
-    if (slotRes.rows.length > 0 && slotRes.rows[0].is_booked) {
-      await client.query("ROLLBACK");
-      reply.status(409);
-      return { status: "error", message: "This time slot is already booked. Please choose another." };
+    // 1. Check Granular Slot Capacity (Confirmed + Recent Pending)
+    const settingsRes = await client.query("SELECT value FROM settings WHERE key = 'available_slots'");
+    if (settingsRes.rows.length > 0) {
+      const config = JSON.parse(settingsRes.rows[0].value);
+      const slotConfig = config.find(c => c.time === appointment_time); 
+      
+      if (slotConfig) {
+        // Count confirmed appointments OR bookings initiated in the last 15 mins
+        const countRes = await client.query(
+          `SELECT COUNT(*) FROM appointments 
+           WHERE appointment_date = $1 AND appointment_time = $2 
+           AND status != 'CANCELLED' 
+           AND (status = 'CONFIRMED' OR created_at > NOW() - INTERVAL '15 minutes')`,
+          [appointment_date, appointment_time]
+        );
+        
+        if (parseInt(countRes.rows[0].count) >= slotConfig.limit) {
+          await client.query("ROLLBACK");
+          reply.status(409);
+          return { status: "error", message: `Slot Full: The ${slotConfig.time} slot has reached its clinic limit of ${slotConfig.limit} patients.` };
+        }
+      }
     }
 
-    // 2. Ensure slot row exists (upsert)
+    // 2. Ensure slot record-keeping (optional/legacy sync)
     await client.query(
       `INSERT INTO time_slots (slot_date, slot_time, is_booked)
        VALUES ($1, $2, FALSE)
@@ -654,30 +772,40 @@ fastify.post("/api/book", async (req, reply) => {
       userId = userRes.rows[0].id;
     }
 
-    // 4. Insert appointment with INITIATED status
+
+    // 4. Generate Daily Sequential Token
+    const countRes = await client.query(
+      "SELECT COUNT(*) FROM appointments WHERE appointment_date = $1",
+      [appointment_date]
+    );
+    const dailyCount = parseInt(countRes.rows[0].count);
+    const token = generateSequenceToken(appointment_date, dailyCount);
+
+    // 5. Insert appointment with INITIATED status
+    const serviceName = service || 'General Consultation';
     const appointmentId = uuidv4();
     await client.query(
       `INSERT INTO appointments
-         (id, user_id, name, phone, appointment_date, appointment_time, payment_status, status, amount)
-       VALUES ($1, $2, $3, $4, $5, $6, 'INITIATED', 'PENDING', 10000)`,
-      [appointmentId, userId, name, phone, appointment_date, appointment_time]
+         (id, user_id, name, phone, appointment_date, appointment_time, service, message, token, payment_status, status, amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'INITIATED', 'PENDING', 10000)`,
+      [appointmentId, userId, name, phone, appointment_date, appointment_time, serviceName, message, token]
     );
 
-    // 5. Create Razorpay order
+    // 6. Create Razorpay order
     const rpOrder = await razorpay.orders.create({
       amount: 10000,        // ₹100 in paise
       currency: "INR",
       receipt: `apt_${appointmentId}`,
-      notes: { appointment_id: appointmentId, phone }
+      notes: { appointment_id: appointmentId, phone, token }
     });
 
-    // 6. Update appointment with razorpay_order_id
+    // 7. Update appointment with razorpay_order_id
     await client.query(
       "UPDATE appointments SET razorpay_order_id = $1 WHERE id = $2",
       [rpOrder.id, appointmentId]
     );
 
-    // 7. Insert into payments table
+    // 8. Insert into payments table
     await client.query(
       `INSERT INTO payments (appointment_id, razorpay_order_id, amount, status)
        VALUES ($1, $2, $3, 'CREATED')`,
@@ -691,6 +819,7 @@ fastify.post("/api/book", async (req, reply) => {
       data: {
         order_id: rpOrder.id,
         appointment_id: appointmentId,
+        token: token,
         amount: 10000,
         currency: "INR",
         key: process.env.RAZORPAY_KEY_ID
