@@ -588,8 +588,8 @@ fastify.post("/update-status", async (req, reply) => {
         badge: "https://drkanaks.com/badge.png",
         data: { patientName: updatedApt.name },
         actions: [
-          { action: 'view-profile', title: 'View Status' },
-          { action: 'book-new', title: 'New Slot' }
+          { action: 'view-profile', title: 'Open Profile' },
+          { action: 'book-new', title: 'Click Here to Open' }
         ]
       });
 
@@ -743,7 +743,7 @@ fastify.post("/broadcast-push", async (req, reply) => {
       badge: "https://drkanaks.com/badge.png",
       image: "https://drkanaks.com/follicle.jpg",
       actions: [
-        { action: 'view-profile', title: 'Check Profile' }
+        { action: 'view-profile', title: 'Click Here to Open' }
       ]
     });
 
