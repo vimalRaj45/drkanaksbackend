@@ -704,6 +704,61 @@ fastify.post("/subscribe", async (req, reply) => {
   }
 });
 
+// 7.1 BROADCAST PUSH NOTIFICATION (ADMIN ONLY)
+fastify.post("/broadcast-push", async (req, reply) => {
+  const { title, body, url, admin_token } = req.body;
+
+  if (admin_token !== ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+
+  if (!title || !body) {
+    reply.status(400);
+    return { status: "error", message: "Title and Body are required" };
+  }
+
+  try {
+    // 1. Fetch all subscriptions
+    const result = await pool.query("SELECT * FROM subscriptions");
+    const subs = result.rows;
+
+    if (subs.length === 0) {
+      return { status: "success", message: "No subscribers found", count: 0 };
+    }
+
+    // 2. Prepare payload
+    const payload = JSON.stringify({
+      title: title,
+      body: body,
+      url: url || "https://dr-kanaks-clinic.netlify.app"
+    });
+
+    // 3. Send notifications in parallel
+    const sendPromises = subs.map(s => 
+      webpush.sendNotification(s.data, payload).catch(err => {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          // Stale subscription, remove it
+          return pool.query("DELETE FROM subscriptions WHERE id = $1", [s.id]);
+        }
+        console.error("Broadcast push error for sub ID:", s.id, err);
+      })
+    );
+
+    await Promise.all(sendPromises);
+
+    return { 
+      status: "success", 
+      message: `Successfully broadcasted to ${subs.length} devices`,
+      count: subs.length 
+    };
+  } catch (err) {
+    req.log.error(err, "Broadcast Push Failure");
+    reply.status(500);
+    return { status: "error", message: "Internal server error during broadcast" };
+  }
+});
+
 // 8. SERVE ADMIN PAGE
 fastify.get("/admin-panel", async (req, reply) => {
   const filePath = path.join(__dirname, "admin.html");
