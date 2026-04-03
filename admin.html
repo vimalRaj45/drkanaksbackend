@@ -113,6 +113,7 @@
         <nav id="adminNav" style="display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem;">
             <a href="javascript:void(0)" class="nav-item active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i> Dashboard</a>
             <a href="javascript:void(0)" class="nav-item" onclick="switchTab('settings')"><i data-lucide="settings"></i> Clinical Settings</a>
+            <a href="javascript:void(0)" class="nav-item" onclick="switchTab('push')"><i data-lucide="bell"></i> Global Push</a>
         </nav>
         <div class="auth-bar">
             <input type="password" id="adminToken" value="CHANGE_THIS_SECRET" placeholder="Token">
@@ -187,28 +188,54 @@
                 </div>
             </div>
 
-            <div class="stat-card" style="max-width:800px; margin-top:2rem; border:1px solid rgba(134,59,255,0.3); background:rgba(134,59,255,0.02);">
-                <h3 style="margin-bottom:1.5rem; color:var(--primary); display:flex; align-items:center; gap:8px;"><i data-lucide="radio"></i> Global Patient Outreach</h3>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Send a live notification to all patients currently on the website. Use this for clinic announcements or testimonial requests.</p>
-                
-                <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
-                    <input type="text" id="broadcastMsg" placeholder="e.g. Please share your experience with us!" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:1rem; border-radius:14px; outline:none; font-weight:600;">
-                    <button onclick="sendManualBroadcast()" style="background:var(--primary); color:white; border:none; padding:0 24px; border-radius:14px; font-weight:800; cursor:pointer;">BROADCAST</button>
-                </div>
-
-                <div style="margin-top:1.5rem; display:flex; gap:10px;">
-                    <button onclick="sendReviewRequest()" style="background:rgba(20,184,166,0.1); color:#14b8a6; border:1px solid #14b8a6; padding:0.8rem 1.5rem; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:6px;">
-                        <i data-lucide="star" style="width:14px;"></i> QUICK REVIEW REQUEST (AUTO-NAVIGATE)
-                    </button>
-                    <button onclick="clearBroadcast()" style="background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid var(--border); padding:0.8rem 1.5rem; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.75rem;">CLEAR ACTIVE ALERT</button>
-                </div>
-            </div>
-
             <div style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--border);">
-                <button onclick="saveAllSettings()" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4);">
-                    SAVE GLOBAL CLINICAL RULES
-                </button>
+                    <button onclick="saveAllSettings()" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4);">
+                        SAVE GLOBAL CLINICAL RULES
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- PUSH NOTIFICATIONS VIEW -->
+        <div id="view-push" style="display:none;">
+            <header>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="mobile-toggle" onclick="event.stopPropagation(); toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <h1 style="font-weight: 800; letter-spacing: -0.5px;">Global Push Broadcast</h1>
+                </div>
+            </header>
+
+            <div class="stat-card" style="max-width:800px; margin-top:2rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                    <div>
+                        <h3 style="color:var(--primary); margin-bottom:5px;">Broadcast Message</h3>
+                        <p style="font-size:0.75rem; color:var(--text-muted);">Send a notification to all subscribed patients instantly.</p>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <div>
+                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Notification Title</label>
+                        <input type="text" id="pushTitle" placeholder="e.g. Clinic Holiday Tomorrow" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:12px; width:100%; padding:1rem; font-weight:600;">
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Message Body</label>
+                        <textarea id="pushBody" placeholder="Write your announcement here..." style="width:100%; height:120px; background:#0f172a; border:1px solid var(--border); border-radius:12px; color:white; padding:1rem; outline:none; resize:none; font-family:inherit;"></textarea>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Redirect URL (Feedback / Link)</label>
+                        <input type="text" id="pushUrl" placeholder="https://dr-kanaks-clinic.netlify.app/feedback" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:12px; width:100%; padding:1rem;">
+                        <p style="font-size:0.65rem; color:var(--text-muted); margin-top:5px; margin-left:5px;">💡 Usually, use your patient feedback link here.</p>
+                    </div>
+
+                    <button onclick="sendPushBroadcast()" id="btnSendPush" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4); display:flex; align-items:center; justify-content:center; gap:10px; transition:0.3s;">
+                        <i data-lucide="send" style="width:18px;"></i> EXECUTE GLOBAL BROADCAST
+                    </button>
+                    
+                    <div id="pushStatus" style="font-size:0.75rem; text-align:center; color:var(--secondary); font-weight:700; height:20px;"></div>
+                </div>
             </div>
         </div>
 
@@ -277,15 +304,19 @@
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.getElementById('view-dashboard').style.display = 'none';
         document.getElementById('view-settings').style.display = 'none';
+        document.getElementById('view-push').style.display = 'none';
         
         if(view === 'dashboard') {
             document.getElementById('view-dashboard').style.display = 'block';
             document.querySelector('[onclick="switchTab(\'dashboard\')"]').classList.add('active');
             refreshData();
-        } else {
+        } else if(view === 'settings') {
             document.getElementById('view-settings').style.display = 'block';
             document.querySelector('[onclick="switchTab(\'settings\')"]').classList.add('active');
             loadSettings();
+        } else if(view === 'push') {
+            document.getElementById('view-push').style.display = 'block';
+            document.querySelector('[onclick="switchTab(\'push\')"]').classList.add('active');
         }
     }
 
@@ -515,25 +546,49 @@
         Swal.fire({ icon:'success', title:'Global Settings Saved', text:'Settings updated.' });
     }
 
-    async function sendManualBroadcast() {
-        const msg = document.getElementById('broadcastMsg').value;
-        if(!msg) return;
-        await apiCall('/broadcast', 'POST', { message: msg, type: 'MANUAL', admin_token: "CHANGE_THIS_SECRET" });
-        Swal.fire({ icon:'success', title:'Broadcast Sent', text:'Live notification pushed to all patients.' });
-    }
+    async function sendPushBroadcast() {
+        const title = document.getElementById('pushTitle').value;
+        const body = document.getElementById('pushBody').value;
+        const url = document.getElementById('pushUrl').value;
+        const btn = document.getElementById('btnSendPush');
+        const status = document.getElementById('pushStatus');
 
-    async function sendReviewRequest() {
-        await apiCall('/broadcast', 'POST', { 
-            message: "We'd love to hear from you! Please share your feedback in our testimonials section.", 
-            type: 'REVIEW_REQUEST', 
-            admin_token: "CHANGE_THIS_SECRET" 
+        if(!title || !body) {
+            Swal.fire('Missing Details', 'Title and Body are required for broadcast.', 'error');
+            return;
+        }
+
+        const confirm = await Swal.fire({
+            title: 'Confirm Broadcast?',
+            text: "This will send a pulse to ALL subscribed patients instantly.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#863bff',
+            confirmButtonText: 'Yes, Send Now!'
         });
-        Swal.fire({ icon:'success', title:'Review Request Sent', text:'Patients will be guided to leave a review.' });
-    }
 
-    async function clearBroadcast() {
-        await apiCall('/broadcast', 'POST', { message: null, type: 'CLEAR', admin_token: "CHANGE_THIS_SECRET" });
-        Swal.fire({ icon:'info', title:'Broadcast Cleared', text:'Active notification removed.' });
+        if(!confirm.isConfirmed) return;
+
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> TRANSMITTING...`;
+        lucide.createIcons();
+        status.innerText = "Transmitting to clinical sub-network...";
+
+        const res = await apiCall('/broadcast-push', 'POST', { title, body, url });
+        
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="send" style="width:18px;"></i> EXECUTE GLOBAL BROADCAST`;
+        lucide.createIcons();
+
+        if(res && res.status === 'success') {
+            Swal.fire('Broadcast Successful', res.message, 'success');
+            status.innerText = `Success: ${res.message}`;
+            document.getElementById('pushTitle').value = '';
+            document.getElementById('pushBody').value = '';
+        } else {
+            Swal.fire('Failed', res ? res.message : 'Unknown error', 'error');
+            status.innerText = "Transmission failed.";
+        }
     }
 
     function renderCharts(services, weekly) {

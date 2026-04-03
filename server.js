@@ -276,7 +276,7 @@ fastify.post("/create-user", async (req) => {
 fastify.post("/book", async (req) => {
   const { name, phone, date, time, service, message } = req.body;
 
-  const err = validate(["name","phone","date","time","service"], req.body);
+  const err = validate(["name", "phone", "date", "time", "service"], req.body);
   if (err) return { status: "error", message: err };
 
   if (!isValidTimeSlot(date, time)) {
@@ -335,11 +335,11 @@ fastify.post("/book", async (req) => {
 fastify.post("/feedback", async (req) => {
   const { rating, feedback, name, source } = req.body;
   const id = uuidv4();
-  
+
   try {
     // Basic logging of feedback, can be expanded to DB table later
     fastify.log.info({ rating, feedback, name, source }, "Feedback received");
-    
+
     // If you have a feedback table:
     // await pool.query("INSERT INTO feedback (id, rating, feedback, source) VALUES ($1, $2, $3, $4)", [id, rating, feedback, source]);
 
@@ -514,7 +514,7 @@ fastify.get("/public-stats", async () => {
 
   const count = parseInt(total.rows[0].count);
   const confirmedCount = parseInt(confirmed.rows[0].count);
-  
+
   // Base numbers plus actual DB counts
   return {
     status: "success",
@@ -578,7 +578,7 @@ fastify.post("/update-status", async (req, reply) => {
   if (updatedApt.user_id) {
     try {
       const subs = await pool.query("SELECT * FROM subscriptions WHERE user_id = $1", [updatedApt.user_id]);
-      
+
       const note = status === 'CONFIRMED' ? (suggestion || '') : (suggestion ? 'Suggested: ' + suggestion : '');
       const payload = JSON.stringify({
         title: "Appointment Update",
@@ -586,7 +586,7 @@ fastify.post("/update-status", async (req, reply) => {
         url: "https://dr-kanaks-clinic.netlify.app"
       });
 
-      const pushPromises = subs.rows.map(s => 
+      const pushPromises = subs.rows.map(s =>
         webpush.sendNotification(s.data, payload).catch(err => {
           if (err.statusCode === 410 || err.statusCode === 404) {
             // Stale subscription, remove it
@@ -602,10 +602,10 @@ fastify.post("/update-status", async (req, reply) => {
     }
   }
 
-  return { 
-    status: "success", 
-    message: status === 'CANCELLED' ? "Appointment cancelled with reason" : "Updated", 
-    data: updatedApt 
+  return {
+    status: "success",
+    message: status === 'CANCELLED' ? "Appointment cancelled with reason" : "Updated",
+    data: updatedApt
   };
 });
 
@@ -652,27 +652,6 @@ fastify.get("/api/queue-stats/:date", async (req) => {
   return { status: "success", count: parseInt(result.rows[0].count) };
 });
 
-// 6.2.3 BROADCAST API
-fastify.get("/api/broadcast", async () => {
-  const result = await pool.query("SELECT value FROM settings WHERE key = 'active_broadcast'");
-  if (result.rows.length === 0) return { status: "success", data: null };
-  return { status: "success", data: JSON.parse(result.rows[0].value) };
-});
-
-fastify.post("/api/broadcast", async (req, reply) => {
-  const { message, type, admin_token } = req.body;
-  if (admin_token !== process.env.ADMIN_TOKEN) {
-    reply.status(401);
-    return { status: "error", message: "Unauthorized" };
-  }
-  const value = JSON.stringify({ message, type, timestamp: new Date().toISOString() });
-  await pool.query(
-    "INSERT INTO settings (key, value) VALUES ('active_broadcast', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
-    [value]
-  );
-  return { status: "success", message: "Broadcast sent" };
-});
-
 // 6.3 UPDATE SETTINGS
 fastify.post("/settings", async (req, reply) => {
   const { key, value, admin_token } = req.body;
@@ -691,7 +670,7 @@ fastify.post("/settings", async (req, reply) => {
 // 7. WEB PUSH SUBSCRIBE (Updated for Targeted Notifications)
 fastify.post("/subscribe", async (req, reply) => {
   const { userId, subscription } = req.body;
-  
+
   // Support both { subscription: {...} } and direct {...subscription} from React
   const sub = subscription || req.body;
   const targetId = userId || req.body.userId;
@@ -752,8 +731,8 @@ fastify.post("/api/book", async (req, reply) => {
     const settingsRes = await client.query("SELECT value FROM settings WHERE key = 'available_slots'");
     if (settingsRes.rows.length > 0) {
       const config = JSON.parse(settingsRes.rows[0].value);
-      const slotConfig = config.find(c => c.time === appointment_time); 
-      
+      const slotConfig = config.find(c => c.time === appointment_time);
+
       if (slotConfig) {
         // Count confirmed appointments OR bookings initiated in the last 15 mins
         const countRes = await client.query(
@@ -763,7 +742,7 @@ fastify.post("/api/book", async (req, reply) => {
            AND (status = 'CONFIRMED' OR created_at > NOW() - INTERVAL '15 minutes')`,
           [appointment_date, appointment_time]
         );
-        
+
         if (parseInt(countRes.rows[0].count) >= slotConfig.limit) {
           await client.query("ROLLBACK");
           reply.status(409);
