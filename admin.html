@@ -3,371 +3,744 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. Kanak's | Clinical Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Dr Kanaks | Clinic Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         :root {
-            --primary: #863bff;
-            --secondary: #14b8a6;
-            --accent: #f43f5e;
-            --bg-dark: #020617;
-            --card-bg: rgba(15, 23, 42, 0.9);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-muted: #94a3b8;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-light: #f8fafc;
+            --border: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --sidebar-w: 240px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background-color: var(--bg-dark); color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .layout { display: flex; transition: 0.3s; }
+        /* ===== LOGIN SCREEN ===== */
+        #loginPage {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1.5rem;
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .login-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .login-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        .login-input-wrap {
+            position: relative;
+            margin-bottom: 1.2rem;
+        }
+        .login-input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        .login-input {
+            width: 100%;
+            height: 48px;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0 1rem 0 2.5rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .login-input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+        .login-btn {
+            width: 100%;
+            height: 48px;
+            background: var(--primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-btn:hover {
+            background: var(--primary-hover);
+        }
+        .login-error {
+            font-size: 0.8rem;
+            color: #ef4444;
+            margin-top: 0.8rem;
+            font-weight: 500;
+            min-height: 20px;
+        }
 
-        /* Mobile Sidebar */
+        /* ===== ADMIN LAYOUT ===== */
+        #adminLayout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
         .sidebar {
-            width: 280px;
-            background: #020617;
+            width: var(--sidebar-w);
+            background: white;
             border-right: 1px solid var(--border);
             height: 100vh;
             position: fixed;
-            left: -280px;
-            top: 0;
-            z-index: 1000;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 2rem;
+            left: 0; top: 0;
+            z-index: 200;
             display: flex;
             flex-direction: column;
-            gap: 2.5rem;
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 1023px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
         }
 
-        .sidebar.open { left: 0; }
-
-        @media (min-width: 1024px) {
-            .sidebar { position: sticky; left: 0; }
-            .content { padding-left: 2rem; }
-            .mobile-toggle { display: none; }
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--primary);
         }
 
-        .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .logo span { color: var(--primary); }
-
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
         .nav-item {
-            padding: 0.8rem 1.2rem;
-            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
             color: var(--text-muted);
-            text-decoration: none;
+            font-size: 0.85rem;
             font-weight: 600;
-            display: flex; align-items: center; gap: 12px;
-            transition: 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .nav-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
         }
 
-        .nav-item.active { background: var(--primary); color: white; }
-        .nav-item i { width: 18px; height: 18px; }
-
-        /* Main Content */
-        .content { flex: 1; padding: 1.5rem; max-width: 1600px; margin: 0 auto; width: 100%; transition: 0.3s; }
-
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .mobile-toggle { background: var(--card-bg); border: 1px solid var(--border); padding: 0.7rem; border-radius: 12px; cursor: pointer; color: white; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
-        .stat-card h3 { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; }
-        .stat-card .val { font-size: 1.8rem; font-weight: 800; }
-
-        /* Data Section */
-        .data-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 1.5rem; overflow-x: auto; margin-bottom: 2rem; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; border-bottom: 1px solid var(--border); }
-        td { padding: 1.2rem 1rem; border-bottom: 1px solid var(--border); }
-
-        .badge { padding: 0.4rem 0.8rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
-        .bg-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        .bg-confirmed { background: rgba(20, 184, 166, 0.1); color: #14b8a6; }
-        .bg-cancelled { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-
-        .btn-action { 
-            width: 36px; height: 36px; border-radius: 10px; 
-            border: 1px solid var(--border); background: #0f172a; 
-            color: white; cursor: pointer; transition: 0.3s;
-            display: inline-flex; align-items: center; justify-content: center;
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
         }
-        .btn-action:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-2px); }
-
-        .auth-bar { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
-        input { background: #0f172a; border: 1px solid var(--border); color: white; padding: 0.6rem 1rem; border-radius: 12px; width: 100%; outline: none; }
-        input:focus { border-color: var(--primary); }
-
-        @media (max-width: 640px) {
-            .stat-card .val { font-size: 1.5rem; }
-            header h1 { font-size: 1.3rem; }
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #fee2e2;
+            border-radius: 8px;
+            background: none;
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            justify-content: center;
+            transition: background 0.2s;
         }
+        .logout-btn:hover {
+            background: #fee2e2;
+        }
+
+        /* MOBILE HEADER */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            z-index: 150;
+            align-items: center;
+            padding: 0 1rem;
+            justify-content: space-between;
+        }
+        @media (max-width: 1023px) {
+            .mobile-header { display: flex; }
+        }
+        .menu-btn {
+            font-size: 1.4rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            padding: 2rem;
+        }
+        @media (max-width: 1023px) {
+            .main-content { margin-left: 0; padding-top: 80px; padding-left: 1rem; padding-right: 1rem; }
+        }
+
+        .page-view { display: none; }
+        .page-view.active { display: block; }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        /* CONTENT CARDS */
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+        }
+        .filter-input {
+            height: 40px;
+            padding: 0 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            background: var(--bg-light);
+        }
+        .filter-input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        /* PATIENT TABLE */
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-light);
+        }
+        td {
+            padding: 1rem 0.8rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+        .patient-link {
+            color: var(--primary);
+            font-weight: 700;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .status-input {
+            width: 120px;
+            height: 34px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            outline: none;
+            background: var(--bg-light);
+        }
+        .status-input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        /* BANNER MANAGEMENT */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            background: var(--bg-light);
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+        textarea.form-control { height: 90px; resize: none; }
+
+        .upload-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-upload {
+            height: 40px;
+            padding: 0 1rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .img-preview {
+            display: none;
+            margin-top: 10px;
+            position: relative;
+            max-width: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .img-preview img { width: 100%; height: auto; display: block; }
+        .img-preview-clear {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(0,0,0,0.6);
+            border: none; color: white;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 0.7rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            height: 44px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover { background: var(--primary-hover); }
+
+        .banner-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 10px;
+        }
+        .banner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .banner-title { font-weight: 700; font-size: 0.9rem; }
+        .banner-body { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+        .banner-img { max-height: 80px; overflow: hidden; margin-top: 8px; border-radius: 6px; border: 1px solid var(--border); }
+        .banner-img img { width: 100%; height: 80px; object-fit: cover; }
+        .action-icon {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 5px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+        .action-icon:hover { color: var(--primary); }
+        .action-icon.delete:hover { color: #ef4444; }
+
+        /* PATIENT DETAILS MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 { font-size: 1rem; font-weight: 800; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
+        .field-group { margin-bottom: 0.8rem; }
+        .field-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+        .field-value { font-size: 0.85rem; font-weight: 600; }
+        .field-value.problems { background: var(--bg-light); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; font-style: italic; max-height: 100px; overflow-y: auto; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
 
-<<div class="layout">
+<!-- ===== LOGIN COVER ===== -->
+<div id="loginPage">
+    <div class="login-card">
+        <div class="login-logo">DR KANAKS</div>
+        <div class="login-sub">Clinical Administration Panel</div>
+        <div class="login-input-wrap">
+            <i class="bi bi-lock login-input-icon"></i>
+            <input type="password" id="loginPasswordInput" class="login-input" placeholder="Enter password" onkeydown="if(event.key==='Enter') doPasswordLogin()">
+        </div>
+        <button class="login-btn" onclick="doPasswordLogin()">Unlock Panel</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- ===== MAIN WORKSPACE ===== -->
+<div id="adminLayout" style="display:none;">
+
+    <!-- MOBILE HEADER -->
+    <div class="mobile-header">
+        <button class="menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+        <span style="font-weight:800; color:var(--primary);">DR KANAKS</span>
+        <span></span>
+    </div>
+
+    <!-- OVERLAY FOR MOBILE SIDEBAR -->
+    <div style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:190;" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
-        <div class="logo">DR. KANAK'S <span>PRIME</span></div>
-        <nav id="adminNav" style="display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem;">
-            <a href="javascript:void(0)" class="nav-item active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-            <a href="javascript:void(0)" class="nav-item" onclick="switchTab('settings')"><i data-lucide="settings"></i> Clinical Settings</a>
-            <a href="javascript:void(0)" class="nav-item" onclick="switchTab('push')"><i data-lucide="bell"></i> Global Push</a>
+        <div class="sidebar-header">DR KANAKS PORTAL</div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                <i class="bi bi-calendar-check"></i> Bookings
+            </button>
+            <button class="nav-item" id="nav-push" onclick="switchTab('push')">
+                <i class="bi bi-megaphone"></i> Banners
+            </button>
         </nav>
-        <div class="auth-bar">
-            <input type="password" id="adminToken" value="CHANGE_THIS_SECRET" placeholder="Token">
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="doLogout()"><i class="bi bi-box-arrow-left"></i> Logout</button>
         </div>
     </aside>
 
-    <div class="content" id="mainContent" onclick="closeSidebarOnMobile()">
+    <!-- CONTENT WRAPPER -->
+    <main class="main-content">
         
-        <!-- DASHBOARD VIEW -->
-        <div id="view-dashboard">
-            <header>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <button class="mobile-toggle" onclick="event.stopPropagation(); toggleSidebar()"><i data-lucide="menu"></i></button>
-                    <h1 style="font-weight: 800; letter-spacing: -0.5px;">Clinical Dashboard</h1>
+        <!-- DASHBOARD TAB -->
+        <div class="page-view active" id="view-dashboard">
+            <div class="page-title">Patient Bookings</div>
+            
+            <div class="card">
+                <div class="filters-row">
+                    <input type="date" id="dateFilter" class="filter-input" onchange="fetchAppointments()">
+                    <input type="text" id="searchInput" class="filter-input" placeholder="Search Patients..." oninput="fetchAppointments()" style="flex:1;">
+                    <button class="filter-input" onclick="refreshData()" style="cursor:pointer; background:white; font-weight:700;"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
                 </div>
-                <button onclick="refreshData()" style="padding: 0.7rem 1.4rem; background: var(--primary); border: none; border-radius: 12px; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="rotate-cw" style="width: 16px;"></i> <span class="d-none sm-block">Sync</span>
-                </button>
-            </header>
 
-            <div class="stats-grid">
-                <div class="stat-card"><h3>Medical Matrix</h3><div class="val" id="statTotal">0</div></div>
-                <div class="stat-card"><h3>Active Today</h3><div class="val" id="statToday">0</div></div>
-                <div class="stat-card"><h3>Conf. Rate</h3><div class="val" id="statConfirmed" style="color: var(--secondary)">0</div></div>
-                <div class="stat-card"><h3>Estimated Revenue</h3><div class="val" id="statRevenue">₹0</div></div>
-            </div>
-
-            <div class="data-section">
-                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <input type="date" id="dateFilter" onchange="fetchAppointments()" style="max-width: 180px;">
-                    <input type="text" id="searchInput" placeholder="Search Patients..." oninput="fetchAppointments()" style="flex: 1; min-width: 200px;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Schedule</th>
+                                <th>Patient Details</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listBody">
+                            <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:2rem;">Loading data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Schedule</th>
-                            <th>Patient Identity</th>
-                            <th>Status</th>
-                            <th>Queue Operations</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listBody"></tbody>
-                </table>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
-                <div class="stat-card" style="min-height: 300px;"><canvas id="growthChart"></canvas></div>
-                <div class="stat-card" style="min-height: 300px;"><canvas id="mixChart"></canvas></div>
             </div>
         </div>
 
-        <!-- SETTINGS VIEW -->
-        <div id="view-settings" style="display:none;">
-            <header>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <button class="mobile-toggle" onclick="event.stopPropagation(); toggleSidebar()"><i data-lucide="menu"></i></button>
-                    <h1 style="font-weight: 800; letter-spacing: -0.5px;">Clinical Regulations</h1>
-                </div>
-            </header>
-            
-            <div class="stat-card" style="max-width:800px; margin-top:2rem;">
-                <h3 style="margin-bottom:1.5rem; color:var(--secondary);">Clinical Schedule (Static Timings)</h3>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Manage the exact times a patient can choose. These will be fetched live by the booking page.</p>
+        <!-- BANNERS TAB -->
+        <div class="page-view" id="view-push">
+            <div class="page-title">Banner Management</div>
+
+            <div class="card" style="max-width: 600px;">
+                <div style="font-weight: 700; margin-bottom: 1rem;" id="bannerFormLabel">Publish New Banner</div>
                 
-                <div id="slotsList" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:1.5rem;">
-                    <!-- Slot Tags -->
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="pushTitle" class="form-control" placeholder="e.g. Clinic Holiday">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message Description</label>
+                    <textarea id="pushBody" class="form-control" placeholder="Write announcement message..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Redirect Link (Optional)</label>
+                    <input type="text" id="pushUrl" class="form-control" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Banner Image</label>
+                    <div class="upload-wrapper">
+                        <input type="text" id="pushImage" class="form-control" placeholder="Image URL">
+                        <label class="btn-upload">
+                            <i class="bi bi-cloud-arrow-up"></i> File
+                            <input type="file" id="pushImageFile" accept="image/*" style="display:none;" onchange="handleAdminImageUpload()">
+                        </label>
+                    </div>
+                    <div class="img-preview" id="imagePreviewContainer">
+                        <img id="imagePreview" src="">
+                        <button onclick="clearUploadedImage()" type="button" class="img-preview-clear"><i class="bi bi-x"></i></button>
+                    </div>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 0.5rem; margin-bottom: 1rem;">
+                    <input type="checkbox" id="sendNativePushCheckbox" checked style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="sendNativePushCheckbox" style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark); cursor: pointer; user-select: none;">
+                        Also send as Browser Push Notification
+                    </label>
                 </div>
 
-                <div style="display:flex; gap:10px;">
-                    <input type="time" id="newSlotInput" style="max-width:200px;">
-                    <button onclick="addNewSlot()" style="background:var(--secondary); color:white; border:none; padding:0 20px; border-radius:12px; font-weight:700; cursor:pointer;">+ ADD SLOT</button>
-                </div>
+                <button class="submit-btn" id="btnSendPush" onclick="sendPushBroadcast()">Publish Banner</button>
+                <button id="btnCancelEdit" onclick="cancelBannerEdit()" style="display:none; width:100%; height:36px; background:none; border:1px solid var(--border); border-radius:8px; color:var(--text-muted); cursor:pointer; margin-top:6px; font-size:0.8rem;">Cancel Edit</button>
             </div>
 
-            <div style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--border);">
-                    <button onclick="saveAllSettings()" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4);">
-                        SAVE GLOBAL CLINICAL RULES
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- PUSH NOTIFICATIONS VIEW -->
-        <div id="view-push" style="display:none;">
-            <header>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <button class="mobile-toggle" onclick="event.stopPropagation(); toggleSidebar()"><i data-lucide="menu"></i></button>
-                    <h1 style="font-weight: 800; letter-spacing: -0.5px;">Global Push Broadcast</h1>
-                </div>
-            </header>
-
-            <div class="stat-card" style="max-width:800px; margin-top:2rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-                    <div>
-                        <h3 style="color:var(--primary); margin-bottom:5px;">Broadcast Message</h3>
-                        <p style="font-size:0.75rem; color:var(--text-muted);">Send a notification to all subscribed patients instantly.</p>
-                    </div>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:1.5rem;">
-                    <div>
-                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Notification Title</label>
-                        <input type="text" id="pushTitle" placeholder="e.g. Clinic Holiday Tomorrow" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:12px; width:100%; padding:1rem; font-weight:600;">
-                    </div>
-
-                    <div>
-                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Message Body</label>
-                        <textarea id="pushBody" placeholder="Write your announcement here..." style="width:100%; height:120px; background:#0f172a; border:1px solid var(--border); border-radius:12px; color:white; padding:1rem; outline:none; resize:none; font-family:inherit;"></textarea>
-                    </div>
-
-                    <div>
-                        <label style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:8px; font-weight:800; letter-spacing:1px;">Redirect URL (Feedback / Link)</label>
-                        <input type="text" id="pushUrl" placeholder="https://dr-kanaks-clinic.netlify.app/feedback" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:12px; width:100%; padding:1rem;">
-                        <p style="font-size:0.65rem; color:var(--text-muted); margin-top:5px; margin-left:5px;">💡 Usually, use your patient feedback link here.</p>
-                    </div>
-
-                    <button onclick="sendPushBroadcast()" id="btnSendPush" style="background:var(--primary); color:white; border:none; padding:1.2rem; border-radius:16px; font-weight:800; cursor:pointer; width:100%; font-size:1rem; box-shadow:0 10px 20px -5px rgba(134,59,255,0.4); display:flex; align-items:center; justify-content:center; gap:10px; transition:0.3s;">
-                        <i data-lucide="send" style="width:18px;"></i> EXECUTE GLOBAL BROADCAST
-                    </button>
-                    
-                    <div id="pushStatus" style="font-size:0.75rem; text-align:center; color:var(--secondary); font-weight:700; height:20px;"></div>
+            <div class="card" style="max-width: 600px;">
+                <div style="font-weight: 700; margin-bottom: 1rem;">Active Banners</div>
+                <div id="bannersList">
+                    <p style="font-size:0.8rem; color:var(--text-muted);">Loading banners...</p>
                 </div>
             </div>
         </div>
 
+    </main>
+</div>
+
+<!-- PATIENT PROFILE LIGHT MODAL -->
+<div class="modal-overlay" id="patientModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Patient Profile Information</h3>
+            <button class="modal-close" onclick="closePatientModal()"><i class="bi bi-x"></i></button>
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Full Name</div>
+            <div class="field-value" id="pModalName">—</div>
+        </div>
+
+        <div class="modal-grid">
+            <div class="field-group">
+                <div class="field-label">Phone</div>
+                <a id="pModalPhone" href="" style="color:var(--primary); font-weight:700; text-decoration:none;">—</a>
+            </div>
+            <div class="field-group">
+                <div class="field-label">Patient ID</div>
+                <div class="field-value" id="pModalId" style="font-family:monospace; font-size:0.75rem;">—</div>
+            </div>
+        </div>
+
+        <div class="modal-grid">
+            <div class="field-group">
+                <div class="field-label">Chosen Slot Time</div>
+                <div class="field-value" id="pModalDateTime">—</div>
+            </div>
+            <div class="field-group">
+                <div class="field-label">Booked On</div>
+                <div class="field-value" id="pModalCreated">—</div>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Therapy / Service</div>
+            <div class="field-value" id="pModalService">—</div>
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Current Problems</div>
+            <div class="field-value problems" id="pModalMessage">—</div>
+        </div>
+
+        <button class="submit-btn" onclick="closePatientModal()" style="height:38px; margin-top:10px;">Close Profile</button>
     </div>
 </div>
 
-<!-- CLINICAL VISIT MODAL -->
-<div id="clinicalModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:2000; align-items:center; justify-content:center; padding:1rem;">
-    <div style="background:var(--bg-dark); border:1px solid var(--border); width:100%; max-width:900px; max-height:90vh; border-radius:24px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-        <div style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
-            <div>
-                <h2 id="modalPatientName" style="font-weight:800; font-size:1.4rem;">Patient Consultation</h2>
-                <div id="modalPatientInfo" style="font-size:0.8rem; color:var(--text-muted)">PID-12345678 | +91 9876543210</div>
-            </div>
-            <button onclick="closeModal()" style="background:none; border:none; color:white; cursor:pointer;"><i data-lucide="x"></i></button>
-        </div>
-        
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); flex:1; overflow:hidden;">
-            <!-- History Section -->
-            <div style="padding:1.5rem; border-right:1px solid var(--border); overflow-y:auto; background:rgba(0,0,0,0.2);">
-                <h3 style="font-size:0.8rem; text-transform:uppercase; color:var(--primary); margin-bottom:1rem; letter-spacing:1px;">Clinical History</h3>
-                <div id="historyList" style="display:flex; flex-direction:column; gap:12px;"></div>
-            </div>
-            
-            <!-- Notes Section -->
-            <div style="padding:1.5rem; overflow-y:auto; display:flex; flex-direction:column; gap:1.5rem;">
-                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
-                    <div>
-                        <label style="font-size:0.6rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:5px;">Weight (kg)</label>
-                        <input type="number" id="v_weight" placeholder="0" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:10px; width:100%; padding:0.5rem; font-size:1.1rem; font-weight:700;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.6rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:5px;">BP (sys/dia)</label>
-                        <input type="text" id="v_bp" placeholder="120/80" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:10px; width:100%; padding:0.5rem; font-size:1.1rem; font-weight:700;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.6rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:5px;">Temp (°F)</label>
-                        <input type="number" id="v_temp" placeholder="98.6" style="background:#0f172a; border:1px solid var(--border); color:white; border-radius:10px; width:100%; padding:0.5rem; font-size:1.1rem; font-weight:700;">
-                    </div>
-                </div>
-
-                <div>
-                    <label style="font-size:0.6rem; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:5px;">Consultation Notes & Prescription</label>
-                    <textarea id="modalNotes" placeholder="Describe symptoms, diagnosis, and medications..." style="width:100%; height:200px; background:#0f172a; border:1px solid var(--border); border-radius:12px; color:white; padding:1rem; outline:none; resize:none;"></textarea>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <label style="font-size:0.6rem; text-transform:uppercase; color:var(--text-muted); display:block;">Movement Queue</label>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="saveAndMove('ARRIVED')" style="flex:1; background:rgba(20,184,166,0.1); color:#14b8a6; border:1px solid #14b8a6; padding:0.7rem; border-radius:10px; font-weight:700; cursor:pointer;">ARRIVED</button>
-                        <button onclick="saveAndMove('CONSULTING')" style="flex:1; background:rgba(134,59,255,0.1); color:#863bff; border:1px solid #863bff; padding:0.7rem; border-radius:10px; font-weight:700; cursor:pointer;">IN CLINIC</button>
-                        <button onclick="saveAndMove('COMPLETED')" style="flex:1; background:var(--primary); color:white; border:none; padding:0.7rem; border-radius:10px; font-weight:700; cursor:pointer;">COMPLETE</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<input type="hidden" id="adminToken" value="">
 
 <script>
-    lucide.createIcons();
     const API_BASE = window.location.origin;
-    let growthChart = null, mixChart = null, currentApt = null;
+    let editingBannerId = null;
 
+    /* ========== SIMPLE PASSWORD LOGIN ========== */
+    async function doPasswordLogin() {
+        const pw = document.getElementById('loginPasswordInput').value.trim();
+        const err = document.getElementById('loginError');
+        err.textContent = '';
+        if (!pw) { err.textContent = 'Please enter your password.'; return; }
+
+        const btn = document.querySelector('.login-btn');
+        btn.disabled = true;
+        btn.textContent = 'Verifying...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pw })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                localStorage.setItem('admin_session_token', data.token);
+                document.getElementById('adminToken').value = data.token;
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('adminLayout').style.display = 'flex';
+                refreshData();
+            } else {
+                err.textContent = data.message || 'Incorrect password.';
+                document.getElementById('loginPasswordInput').value = '';
+            }
+        } catch (e) {
+            err.textContent = 'Could not connect to server.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Unlock Panel';
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem('admin_session_token');
+        document.getElementById('adminToken').value = '';
+        document.getElementById('adminLayout').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('loginPasswordInput').value = '';
+        document.getElementById('loginError').textContent = '';
+    }
+
+    /* ========== SIDEBAR TOGGLES ========== */
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if(sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.style.display = 'none';
+        } else {
+            sidebar.classList.add('open');
+            overlay.style.display = 'block';
+        }
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').style.display = 'none';
+    }
+
+    /* ========== TABS ========== */
     function switchTab(view) {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.getElementById('view-dashboard').style.display = 'none';
-        document.getElementById('view-settings').style.display = 'none';
-        document.getElementById('view-push').style.display = 'none';
-        
-        if(view === 'dashboard') {
-            document.getElementById('view-dashboard').style.display = 'block';
-            document.querySelector('[onclick="switchTab(\'dashboard\')"]').classList.add('active');
-            refreshData();
-        } else if(view === 'settings') {
-            document.getElementById('view-settings').style.display = 'block';
-            document.querySelector('[onclick="switchTab(\'settings\')"]').classList.add('active');
-            loadSettings();
-        } else if(view === 'push') {
-            document.getElementById('view-push').style.display = 'block';
-            document.querySelector('[onclick="switchTab(\'push\')"]').classList.add('active');
-        }
+        document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-' + view).classList.add('active');
+        document.getElementById('nav-' + view).classList.add('active');
+        if (view === 'dashboard') refreshData();
+        if (view === 'push') loadBanners();
+        closeSidebar();
+        lucide.createIcons();
     }
 
-    function toggleSidebar() { 
-        document.getElementById('sidebar').classList.toggle('open'); 
-        document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
-    }
-
-    function closeSidebarOnMobile() {
-        if (window.innerWidth < 1024) {
-            document.getElementById('sidebar').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-    }
-
+    /* ========== API HELPER ========== */
     async function apiCall(endpoint, method = 'GET', data = null) {
         const token = document.getElementById('adminToken').value;
-        const options = {
-            method,
-            headers: { 'Content-Type': 'application/json' }
-        };
-        
+        const options = { method, headers: { 'Content-Type': 'application/json' } };
         let url = `${API_BASE}${endpoint}`;
-        if(method === 'GET') {
+        if (method === 'GET') {
             const params = new URLSearchParams({ ...data, admin_token: token }).toString();
             url += `?${params}`;
         } else {
-            const body = { ...data, admin_token: token };
-            options.body = JSON.stringify(body);
+            options.body = JSON.stringify({ ...data, admin_token: token });
         }
-
         try {
             const res = await fetch(url, options);
-            if (res.status === 401) {
-                Swal.fire('Auth Required', 'Invalid admin token.', 'warning');
-                return null;
-            }
+            if (res.status === 401) { Swal.fire('Auth Required', 'Session expired. Please log in again.', 'warning'); doLogout(); return null; }
             return await res.json();
         } catch (e) { console.error(e); return null; }
     }
 
-    async function refreshData() {
-        const stats = await apiCall('/admin/stats');
-        if(stats && stats.data) {
-            const { summary, by_service, weekly_trend } = stats.data;
-            document.getElementById('statTotal').innerText = summary.total;
-            document.getElementById('statToday').innerText = summary.today;
-            document.getElementById('statConfirmed').innerText = summary.confirmed;
-            document.getElementById('statRevenue').innerText = `₹${summary.confirmed * 100}`;
-            renderCharts(by_service, weekly_trend);
-        }
+    /* ========== DATA LOADING ========== */
+    function refreshData() {
         fetchAppointments();
     }
 
@@ -377,238 +750,261 @@
         const res = await apiCall('/appointments', 'GET', { search, date, l: 30 });
         const body = document.getElementById('listBody');
         body.innerHTML = '';
-        if(res && res.data) {
+        if (res && res.data && res.data.length > 0) {
             res.data.forEach(apt => {
                 const row = document.createElement('tr');
+                const aptStr = encodeURIComponent(JSON.stringify(apt));
                 row.innerHTML = `
                     <td>
-                        <div style="font-weight:800; font-size:0.95rem;">${apt.date}</div>
-                        <div style="font-size:0.8rem; color:var(--text-muted)">${apt.time}</div>
-                    </td>
-                    <td>
-                        <div style="font-weight:700">${apt.name}</div>
-                        <div style="font-size:0.75rem; color:var(--primary); font-weight:800">${apt.token || 'REGULAR'}</div>
-                        <div style="font-size:0.7rem; font-weight:600; color:var(--secondary)">${apt.service}</div>
-                        <div style="font-size:0.75rem; color:#863bff; font-weight:600; margin-top:2px;">+91 ${apt.phone}</div>
-                    </td>
-                    <td><span class="badge ${getStatusClass(apt.status)}">${apt.status}</span></td>
-                    <td>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn-action" onclick="openClinicalModal('${encodeURIComponent(JSON.stringify(apt))}')" style="width:auto; padding:0 12px; font-size:0.7rem; font-weight:700;">VISIT</button>
-                            <button class="btn-action" onclick="updateStatus('${apt.id}','CANCELLED')"><i data-lucide="x"></i></button>
+                        <div style="font-weight:700; white-space:nowrap;">
+                            ${formatApptDateTime(apt.date, apt.time)}
                         </div>
+                    </td>
+                    <td>
+                        <div class="patient-link" onclick="showPatientDetails('${aptStr}')">${apt.name}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
+                            ${apt.token || 'REGULAR'} &bull; ${apt.service} &bull; +91 ${apt.phone}
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text"
+                               value="${apt.status || 'PENDING'}"
+                               onchange="updateDynamicStatus('${apt.id}', this.value)"
+                               class="status-input"
+                               placeholder="Status...">
                     </td>
                 `;
                 body.appendChild(row);
             });
-            lucide.createIcons();
+        } else {
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:2rem; font-style:italic;">No appointments found.</td></tr>';
         }
     }
 
-    function getStatusClass(s) {
-        if(s === 'ARRIVED') return 'bg-confirmed';
-        if(s === 'CONSULTING') return 'bg-pending';
-        if(s === 'COMPLETED') return 'bg-confirmed';
-        return `bg-${s.toLowerCase()}`;
-    }
-
-    async function openClinicalModal(aptStr) {
-        currentApt = JSON.parse(decodeURIComponent(aptStr));
-        document.getElementById('clinicalModal').style.display = 'flex';
-        document.getElementById('modalPatientName').innerText = currentApt.name;
-        document.getElementById('modalPatientInfo').innerText = `PID-${currentApt.id.slice(-8)} | +91 ${currentApt.phone}`;
-        document.getElementById('modalNotes').value = currentApt.consultation_notes || '';
-        const v = currentApt.vitals || {};
-        document.getElementById('v_weight').value = v.weight || '';
-        document.getElementById('v_bp').value = v.bp || '';
-        document.getElementById('v_temp').value = v.temp || '';
-
-        const historyRes = await apiCall(`/patient-history/${currentApt.phone}`);
-        const list = document.getElementById('historyList');
-        list.innerHTML = '';
-        if(historyRes && historyRes.data) {
-            historyRes.data.filter(h => h.id !== currentApt.id).forEach(h => {
-                const div = document.createElement('div');
-                div.style.cssText = 'background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:10px;';
-                div.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span style="font-weight:700; font-size:0.8rem; color:var(--secondary);">${h.appointment_date}</span><span style="font-size:0.7rem; opacity:0.6;">${h.service}</span></div><div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">${h.consultation_notes || 'No notes'}</div>`;
-                list.appendChild(div);
-            });
+    async function updateDynamicStatus(id, newStatus) {
+        if (!newStatus.trim()) newStatus = 'PENDING';
+        const res = await apiCall('/update-status', 'POST', { appointment_id: id, status: newStatus });
+        if (res && res.status === 'success') {
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 })
+                .fire({ icon: 'success', title: 'Saved' });
         }
-        lucide.createIcons();
     }
 
-    function closeModal() { document.getElementById('clinicalModal').style.display = 'none'; currentApt = null; }
-
-    async function saveAndMove(newStatus) {
-        await apiCall('/update-status', 'POST', {
-            appointment_id: currentApt.id,
-            status: newStatus,
-            consultation_notes: document.getElementById('modalNotes').value,
-            vitals: { weight: document.getElementById('v_weight').value, bp: document.getElementById('v_bp').value, temp: document.getElementById('v_temp').value }
-        });
-        Swal.fire({ icon: 'success', title: 'Updated', timer: 800, showConfirmButton: false });
-        closeModal();
-        refreshData();
-    }
-
-    async function updateStatus(id, status) {
-        let payload = { appointment_id: id, status };
-        if(status === 'CANCELLED') {
-            const { value: reason } = await Swal.fire({ title: 'Reason', input: 'textarea', showCancelButton: true });
-            if(!reason) return;
-            payload.cancel_reason = reason;
-        }
-        await apiCall('/update-status', 'POST', payload);
-        refreshData();
-    }
-
-    // --- SETTINGS LOGIC ---
-    let localSlots = [];
-
-    // Helper: 24h to 12h
-    function t12(t) {
-        if(!t) return "";
-        let [h, m] = t.split(":");
-        let s = h >= 12 ? "PM" : "AM";
-        h = h % 12 || 12;
-        return `${h}:${m} ${s}`;
-    }
-
-    async function loadSettings() {
-        const res = await apiCall('/settings');
-        if(res && res.data) {
-            const slotObj = res.data.find(s => s.key === 'available_slots');
-            if (slotObj) {
-                const raw = JSON.parse(slotObj.value);
-                // Ensure array of objects
-                localSlots = raw.map(s => typeof s === 'string' ? { time: s, limit: 10 } : s);
-            } else {
-                localSlots = ["10:30 AM", "11:30 AM", "12:30 PM", "02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM"].map(s => ({ time: s, limit: 10 }));
+    /* ========== FORMAT HELPERS ========== */
+    function formatApptDateTime(dateStr, timeStr) {
+        if (!dateStr) return '';
+        try {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const parts = dateStr.split('-');
+            const d = parseInt(parts[2]);
+            const m = months[parseInt(parts[1]) - 1] || '';
+            const y = parseInt(parts[0]);
+            let display = timeStr || '';
+            if (timeStr && timeStr.includes(':')) {
+                const tp = timeStr.split(':');
+                let h = parseInt(tp[0]);
+                let mins = tp[1];
+                if (!timeStr.toUpperCase().includes('AM') && !timeStr.toUpperCase().includes('PM')) {
+                    const suf = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12 || 12;
+                    display = `${h}:${mins.substring(0,2)} ${suf}`;
+                } else {
+                    const suf = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                    h = parseInt(timeStr.split(':')[0]);
+                    display = `${h}:${mins.split(' ')[0]} ${suf}`;
+                }
             }
-            renderSlots();
-        }
+            return `${d} ${m} ${y} ${display}`;
+        } catch (e) { return `${dateStr} ${timeStr}`; }
     }
 
-    function renderSlots() {
-        const list = document.getElementById('slotsList');
+    function formatCreatedTime(ts) {
+        if (!ts) return '—';
+        try {
+            const dt = new Date(ts);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const d = dt.getDate(), m = months[dt.getMonth()], y = dt.getFullYear();
+            let h = dt.getHours();
+            const suf = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            const mins = dt.getMinutes().toString().padStart(2, '0');
+            return `${d} ${m} ${y} ${h}:${mins} ${suf}`;
+        } catch (e) { return ts; }
+    }
+
+    /* ========== PATIENT DETAILS MODAL ========== */
+    function showPatientDetails(aptStr) {
+        const apt = JSON.parse(decodeURIComponent(aptStr));
+        document.getElementById('pModalName').innerText = apt.name;
+        document.getElementById('pModalPhone').innerText = `+91 ${apt.phone}`;
+        document.getElementById('pModalPhone').href = `tel:${apt.phone}`;
+        document.getElementById('pModalId').innerText = apt.id;
+        document.getElementById('pModalDateTime').innerText = formatApptDateTime(apt.date, apt.time);
+        document.getElementById('pModalCreated').innerText = formatCreatedTime(apt.created_at);
+        document.getElementById('pModalService').innerText = apt.service;
+        document.getElementById('pModalMessage').innerText = apt.message || 'No message provided.';
+        document.getElementById('patientModal').classList.add('show');
+    }
+    function closePatientModal() {
+        document.getElementById('patientModal').classList.remove('show');
+    }
+
+    /* ========== BANNERS ========== */
+    async function loadBanners() {
+        const list = document.getElementById('bannersList');
+        list.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted);">Loading banners...</p>';
+        const res = await apiCall('/api/notifications');
         list.innerHTML = '';
-        localSlots.forEach((slot, idx) => {
-            const div = document.createElement('div');
-            div.style.cssText = 'background:rgba(20,184,166,0.05); color:#14b8a6; padding:10px 15px; border-radius:15px; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:12px; border:1px solid rgba(20,184,166,0.3);';
-            div.innerHTML = `
-                <div style="color:var(--text);">${slot.time}</div>
-                <div style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:8px;">
-                    <span style="font-size:0.6rem; color:var(--text-muted);">LIMIT:</span>
-                    <input type="number" value="${slot.limit}" onchange="updateSlotLimit(${idx}, this.value)" style="width:45px; background:transparent; border:none; color:#14b8a6; font-weight:800; text-align:center; padding:0;">
-                </div>
-                <i data-lucide="x" style="width:16px; cursor:pointer; color:#f43f5e;" onclick="removeSlot(${idx})"></i>
-            `;
-            list.appendChild(div);
-        });
-        lucide.createIcons();
-    }
-
-    function updateSlotLimit(idx, val) {
-        localSlots[idx].limit = parseInt(val) || 1;
-    }
-
-    function addNewSlot() {
-        const val = document.getElementById('newSlotInput').value;
-        if(!val) return;
-        const time12 = t12(val);
-        if(!localSlots.find(s => s.time === time12)) {
-            localSlots.push({ time: time12, limit: 10 });
-            localSlots.sort((a, b) => {
-                const getMins = (t) => {
-                    let [h, remainder] = t.split(':');
-                    let [m, s] = remainder.split(' ');
-                    h = parseInt(h);
-                    if(s === 'PM' && h !== 12) h += 12;
-                    if(s === 'AM' && h === 12) h = 0;
-                    return h * 60 + parseInt(m);
-                };
-                return getMins(a.time) - getMins(b.time);
+        if (res && res.data && res.data.length > 0) {
+            res.data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'banner-card';
+                card.innerHTML = `
+                    <div class="banner-header">
+                        <div>
+                            <div class="banner-title">${item.title}</div>
+                            <div class="banner-body">${item.body}</div>
+                            ${item.url ? `<a href="${item.url}" target="_blank" style="font-size:0.7rem; color:var(--primary); text-decoration:none; display:inline-block; margin-top:4px;">Link</a>` : ''}
+                        </div>
+                        <div>
+                            <button class="action-icon" onclick="editBanner('${encodeURIComponent(JSON.stringify(item))}')"><i class="bi bi-pencil"></i></button>
+                            <button class="action-icon delete" onclick="deleteBanner('${item.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                    ${item.image_url ? `<div class="banner-img"><img src="${item.image_url}"></div>` : ''}
+                `;
+                list.appendChild(card);
             });
-            renderSlots();
+        } else {
+            list.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); font-style:italic;">No banners active.</p>';
         }
     }
 
-    function removeSlot(idx) {
-        localSlots.splice(idx, 1);
-        renderSlots();
+    function editBanner(itemStr) {
+        const item = JSON.parse(decodeURIComponent(itemStr));
+        editingBannerId = item.id;
+        document.getElementById('pushTitle').value = item.title;
+        document.getElementById('pushBody').value = item.body;
+        document.getElementById('pushUrl').value = item.url || '';
+        document.getElementById('pushImage').value = item.image_url || '';
+        if (item.image_url) {
+            document.getElementById('imagePreview').src = item.image_url;
+            document.getElementById('imagePreviewContainer').style.display = 'block';
+        } else {
+            document.getElementById('imagePreviewContainer').style.display = 'none';
+        }
+        document.getElementById('btnSendPush').textContent = 'Update Banner';
+        document.getElementById('bannerFormLabel').textContent = 'Edit Banner';
+        document.getElementById('btnCancelEdit').style.display = 'block';
     }
 
-    async function saveAllSettings() {
-        await apiCall('/settings', 'POST', {
-            key: 'available_slots',
-            value: JSON.stringify(localSlots)
+    function cancelBannerEdit() {
+        editingBannerId = null;
+        document.getElementById('pushTitle').value = '';
+        document.getElementById('pushBody').value = '';
+        document.getElementById('pushUrl').value = '';
+        document.getElementById('pushImage').value = '';
+        document.getElementById('imagePreviewContainer').style.display = 'none';
+        document.getElementById('btnSendPush').textContent = 'Publish Banner';
+        document.getElementById('bannerFormLabel').textContent = 'Publish New Banner';
+        document.getElementById('btnCancelEdit').style.display = 'none';
+    }
+
+    async function deleteBanner(id) {
+        const confirm = await Swal.fire({
+            title: 'Delete Banner?',
+            text: 'This will remove the banner from the app.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Delete'
         });
-        Swal.fire({ icon:'success', title:'Global Settings Saved', text:'Settings updated.' });
+        if (!confirm.isConfirmed) return;
+        const token = document.getElementById('adminToken').value;
+        const res = await fetch(`${API_BASE}/api/notifications/${id}?admin_token=${token}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.status === 'success') { Swal.fire({ icon:'success', title:'Deleted', timer:1000, showConfirmButton:false }); loadBanners(); }
     }
 
     async function sendPushBroadcast() {
-        const title = document.getElementById('pushTitle').value;
-        const body = document.getElementById('pushBody').value;
-        const url = document.getElementById('pushUrl').value;
+        const title = document.getElementById('pushTitle').value.trim();
+        const body = document.getElementById('pushBody').value.trim();
+        const url = document.getElementById('pushUrl').value.trim();
+        const image = document.getElementById('pushImage').value.trim();
+        const sendNative = document.getElementById('sendNativePushCheckbox').checked;
         const btn = document.getElementById('btnSendPush');
-        const status = document.getElementById('pushStatus');
 
-        if(!title || !body) {
-            Swal.fire('Missing Details', 'Title and Body are required for broadcast.', 'error');
-            return;
-        }
-
-        const confirm = await Swal.fire({
-            title: 'Confirm Broadcast?',
-            text: "This will send a pulse to ALL subscribed patients instantly.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#863bff',
-            confirmButtonText: 'Yes, Send Now!'
-        });
-
-        if(!confirm.isConfirmed) return;
+        if (!title || !body) { Swal.fire('Missing Information', 'Title and body are required.', 'warning'); return; }
 
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> TRANSMITTING...`;
-        lucide.createIcons();
-        status.innerText = "Transmitting to clinical sub-network...";
+        btn.textContent = 'Processing...';
 
-        const res = await apiCall('/broadcast-push', 'POST', { title, body, url });
-        
+        let res;
+        if (editingBannerId) {
+            res = await apiCall(`/api/notifications/${editingBannerId}`, 'PUT', { title, body, url, image_url: image });
+        } else {
+            res = await apiCall('/broadcast-push', 'POST', { title, body, url, image, send_native_push: sendNative });
+        }
+
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="send" style="width:18px;"></i> EXECUTE GLOBAL BROADCAST`;
-        lucide.createIcons();
+        btn.textContent = editingBannerId ? 'Update Banner' : 'Publish Banner';
 
-        if(res && res.status === 'success') {
-            Swal.fire('Broadcast Successful', res.message, 'success');
-            status.innerText = `Success: ${res.message}`;
-            document.getElementById('pushTitle').value = '';
-            document.getElementById('pushBody').value = '';
+        if (res && res.status === 'success') {
+            Swal.fire({ icon:'success', title: editingBannerId ? 'Updated' : 'Published', timer:1200, showConfirmButton:false });
+            cancelBannerEdit();
+            loadBanners();
         } else {
             Swal.fire('Failed', res ? res.message : 'Unknown error', 'error');
-            status.innerText = "Transmission failed.";
         }
     }
 
-    function renderCharts(services, weekly) {
-        const gCtx = document.getElementById('growthChart').getContext('2d');
-        if (growthChart) growthChart.destroy();
-        growthChart = new Chart(gCtx, {
-            type: 'line',
-            data: { labels: weekly.map(w => w.date), datasets: [{ label: 'Load', data: weekly.map(w => w.count), borderColor: '#863bff', backgroundColor: 'rgba(134,59,255,0.1)', fill: true, tension: 0.4 }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } }
-        });
-        const mCtx = document.getElementById('mixChart').getContext('2d');
-        if (mixChart) mixChart.destroy();
-        mixChart = new Chart(mCtx, {
-            type: 'doughnut',
-            data: { labels: services.map(s => s.service), datasets: [{ data: services.map(s => s.count), backgroundColor: ['#863bff', '#14b8a6', '#f43f5e', '#f59e0b', '#0ea5e9'], borderWidth: 0 }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } } } }
-        });
+    async function handleAdminImageUpload() {
+        const fileInput = document.getElementById('pushImageFile');
+        const urlInput = document.getElementById('pushImage');
+        const token = document.getElementById('adminToken').value;
+        if (!fileInput.files.length) return;
+        urlInput.value = 'Uploading...';
+        urlInput.disabled = true;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const res = await fetch(`${API_BASE}/api/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: e.target.result, admin_token: token })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    urlInput.value = data.url;
+                    document.getElementById('imagePreview').src = data.url;
+                    document.getElementById('imagePreviewContainer').style.display = 'block';
+                } else {
+                    urlInput.value = '';
+                    Swal.fire('Upload Failed', data.message || 'Error uploading.', 'error');
+                }
+            } catch (err) { urlInput.value = ''; Swal.fire('Network Error', 'Upload failed.', 'error'); }
+            finally { urlInput.disabled = false; fileInput.value = ''; }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
     }
 
-    refreshData();
+    function clearUploadedImage() {
+        document.getElementById('pushImage').value = '';
+        document.getElementById('imagePreview').src = '';
+        document.getElementById('imagePreviewContainer').style.display = 'none';
+    }
+
+    /* ========== INIT ========== */
+    window.onload = function() {
+        lucide.createIcons();
+        const savedToken = localStorage.getItem('admin_session_token');
+        if (savedToken) {
+            document.getElementById('adminToken').value = savedToken;
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('adminLayout').style.display = 'flex';
+            refreshData();
+        }
+    };
 </script>
 </body>
 </html>
