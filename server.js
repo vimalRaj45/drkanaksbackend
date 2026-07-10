@@ -1,5 +1,5 @@
 require("dotenv").config();
-const fastify = require("fastify")({ 
+const fastify = require("fastify")({
   logger: true,
   bodyLimit: 52428800 // 50MB limit for base64 image uploads
 });
@@ -18,7 +18,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // 🔐 CONFIG
-const ADMIN_TOKEN = "CHANGE_THIS_SECRET";
+const ADMIN_TOKEN = "dr_kanaks";
 
 // VAPID Keys (Generated)
 const VAPID_KEYS = {
@@ -289,7 +289,7 @@ function formatApptDateTime(dateStr, timeStr) {
     const mIdx = parseInt(parts[1]) - 1;
     const d = parseInt(parts[2]);
     const m = months[mIdx] || "";
-    
+
     let displayTime = timeStr || "";
     if (timeStr && timeStr.includes(':')) {
       const timeParts = timeStr.split(':');
@@ -298,7 +298,7 @@ function formatApptDateTime(dateStr, timeStr) {
       if (!timeStr.toUpperCase().includes('AM') && !timeStr.toUpperCase().includes('PM')) {
         const suffix = h >= 12 ? 'PM' : 'AM';
         h = h % 12 || 12;
-        displayTime = `${h}:${mins.substring(0,2)} ${suffix}`;
+        displayTime = `${h}:${mins.substring(0, 2)} ${suffix}`;
       } else {
         const suffix = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
         h = parseInt(timeStr.split(':')[0]);
@@ -893,13 +893,13 @@ fastify.post("/broadcast-push", async (req, reply) => {
     });
 
     // 3. Optimized Scalable Broadcast (Concurrency Limited)
-    const CONCURRENCY_LIMIT = 50; 
+    const CONCURRENCY_LIMIT = 50;
     let successCount = 0;
     let failureCount = 0;
 
     for (let i = 0; i < subs.length; i += CONCURRENCY_LIMIT) {
       const batch = subs.slice(i, i + CONCURRENCY_LIMIT);
-      const batchPromises = batch.map(s => 
+      const batchPromises = batch.map(s =>
         webpush.sendNotification(s.data, payload)
           .then(() => { successCount++; })
           .catch(err => {
@@ -913,8 +913,8 @@ fastify.post("/broadcast-push", async (req, reply) => {
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    return { 
-      status: "success", 
+    return {
+      status: "success",
       message: `Transmission complete: ${successCount} reached, ${failureCount} failed/cleaned.`,
       stats: { success: successCount, failure: failureCount, total: subs.length }
     };
@@ -983,7 +983,7 @@ fastify.delete("/api/notifications/:id", async (req, reply) => {
 
   try {
     const result = await pool.query("DELETE FROM notifications WHERE id = $1 RETURNING *", [id]);
-    
+
     if (result.rowCount === 0) {
       reply.status(404);
       return { status: "error", message: "Announcement not found" };
@@ -1027,7 +1027,7 @@ fastify.post("/api/admin/send-otp", async (req, reply) => {
     `This OTP is valid for 5 minutes. Do not share it with anyone.`;
 
   console.log(`🔑 Sending Admin OTP [${otp}] to WhatsApp number: ${recipientPhone}`);
-  
+
   const sent = await sendRawWhatsapp(recipientPhone, msg);
   if (sent) {
     // Return partial phone number for security display (e.g. ******1234)
@@ -1089,12 +1089,12 @@ fastify.post("/api/upload", async (req, reply) => {
       [image, mimeType]
     );
     const imageId = result.rows[0].id;
-    
+
     // Construct absolute URL mapping to Postgres retrieval
     const protocol = req.protocol || 'http';
     const host = req.headers.host || 'localhost:3000';
     const fileUrl = `${protocol}://${host}/api/images/${imageId}`;
-    
+
     return { status: "success", url: fileUrl };
   } catch (err) {
     req.log.error(err, "Postgres Image Upload Error");
@@ -1116,7 +1116,7 @@ fastify.post("/api/admin/login", async (req, reply) => {
 // GET /api/images/:id
 fastify.get("/api/images/:id", async (req, reply) => {
   const { id } = req.params;
-  
+
   try {
     const result = await pool.query(
       "SELECT data, mime_type FROM uploaded_images WHERE id = $1",
@@ -1129,7 +1129,7 @@ fastify.get("/api/images/:id", async (req, reply) => {
     }
 
     const { data, mime_type } = result.rows[0];
-    
+
     // Extract base64 part to stream back as binary payload
     const base64Parts = data.split(";base64,");
     if (base64Parts.length !== 2) {
@@ -1138,7 +1138,7 @@ fastify.get("/api/images/:id", async (req, reply) => {
     }
 
     const buffer = Buffer.from(base64Parts[1], "base64");
-    
+
     reply.type(mime_type);
     return buffer;
   } catch (err) {
