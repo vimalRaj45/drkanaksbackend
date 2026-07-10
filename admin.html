@@ -468,11 +468,28 @@
     <div class="login-card">
         <div class="login-logo">DR KANAKS</div>
         <div class="login-sub">Clinical Administration Panel</div>
-        <div class="login-input-wrap">
-            <i class="bi bi-lock login-input-icon"></i>
-            <input type="password" id="loginPasswordInput" class="login-input" placeholder="Enter password" onkeydown="if(event.key==='Enter') doPasswordLogin()">
+        
+        <!-- Phone Input Phase -->
+        <div id="phonePhase">
+            <div class="login-input-wrap">
+                <i class="bi bi-telephone login-input-icon"></i>
+                <input type="tel" id="loginPhoneInput" class="login-input" placeholder="Enter admin phone number" onkeydown="if(event.key==='Enter') requestOtp()">
+            </div>
+            <button class="login-btn" id="requestOtpBtn" onclick="requestOtp()">Send OTP via WhatsApp</button>
         </div>
-        <button class="login-btn" onclick="doPasswordLogin()">Unlock Panel</button>
+
+        <!-- OTP Verification Phase (Hidden Initially) -->
+        <div id="otpPhase" style="display: none;">
+            <div class="login-input-wrap">
+                <i class="bi bi-shield-lock login-input-icon"></i>
+                <input type="text" id="loginOtpInput" class="login-input" placeholder="Enter 6-digit OTP" maxlength="6" onkeydown="if(event.key==='Enter') verifyOtp()">
+            </div>
+            <button class="login-btn" id="verifyOtpBtn" onclick="verifyOtp()">Verify OTP & Unlock</button>
+            <button class="submit-btn" onclick="showPhonePhase()" style="background: none; border: none; color: var(--text-muted); font-size: 0.75rem; text-decoration: underline; margin-top: 1.2rem; cursor: pointer; display: block; width: 100%;">
+                Back to Phone Number
+            </button>
+        </div>
+
         <div class="login-error" id="loginError"></div>
     </div>
 </div>
@@ -647,22 +664,61 @@
     const API_BASE = window.location.origin;
     let editingBannerId = null;
 
-    /* ========== SIMPLE PASSWORD LOGIN ========== */
-    async function doPasswordLogin() {
-        const pw = document.getElementById('loginPasswordInput').value.trim();
+    /* ========== OTP LOGIN ========== */
+    async function requestOtp() {
+        const phone = document.getElementById('loginPhoneInput').value.trim();
         const err = document.getElementById('loginError');
         err.textContent = '';
-        if (!pw) { err.textContent = 'Please enter your password.'; return; }
+        if (!phone) { err.textContent = 'Please enter your phone number.'; return; }
 
-        const btn = document.querySelector('.login-btn');
+        const btn = document.getElementById('requestOtpBtn');
         btn.disabled = true;
-        btn.textContent = 'Verifying...';
+        btn.textContent = 'Sending OTP...';
 
         try {
-            const res = await fetch(`${API_BASE}/api/admin/login`, {
+            const res = await fetch(`${API_BASE}/api/admin/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pw })
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'OTP Sent',
+                    text: data.message,
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+                document.getElementById('phonePhase').style.display = 'none';
+                document.getElementById('otpPhase').style.display = 'block';
+                document.getElementById('loginOtpInput').focus();
+            } else {
+                err.textContent = data.message || 'Verification failed.';
+            }
+        } catch (e) {
+            err.textContent = 'Could not connect to server.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send OTP via WhatsApp';
+        }
+    }
+
+    async function verifyOtp() {
+        const otp = document.getElementById('loginOtpInput').value.trim();
+        const err = document.getElementById('loginError');
+        err.textContent = '';
+        if (!otp || otp.length !== 6) { err.textContent = 'Please enter 6-digit OTP.'; return; }
+
+        const btn = document.getElementById('verifyOtpBtn');
+        btn.disabled = true;
+        btn.textContent = 'Verifying OTP...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otp })
             });
             const data = await res.json();
             if (res.ok && data.status === 'success') {
@@ -672,15 +728,21 @@
                 document.getElementById('adminLayout').style.display = 'flex';
                 refreshData();
             } else {
-                err.textContent = data.message || 'Incorrect password.';
-                document.getElementById('loginPasswordInput').value = '';
+                err.textContent = data.message || 'Incorrect or expired OTP.';
+                document.getElementById('loginOtpInput').value = '';
             }
         } catch (e) {
             err.textContent = 'Could not connect to server.';
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Unlock Panel';
+            btn.textContent = 'Verify OTP & Unlock';
         }
+    }
+
+    function showPhonePhase() {
+        document.getElementById('otpPhase').style.display = 'none';
+        document.getElementById('phonePhase').style.display = 'block';
+        document.getElementById('loginError').textContent = '';
     }
 
     function doLogout() {
@@ -688,8 +750,9 @@
         document.getElementById('adminToken').value = '';
         document.getElementById('adminLayout').style.display = 'none';
         document.getElementById('loginPage').style.display = 'flex';
-        document.getElementById('loginPasswordInput').value = '';
-        document.getElementById('loginError').textContent = '';
+        showPhonePhase();
+        document.getElementById('loginPhoneInput').value = '';
+        document.getElementById('loginOtpInput').value = '';
     }
 
     /* ========== SIDEBAR TOGGLES ========== */

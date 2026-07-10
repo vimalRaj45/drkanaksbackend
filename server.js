@@ -1009,10 +1009,24 @@ let activeAdminOtp = { otp: null, expiresAt: null };
 
 // POST /api/admin/send-otp
 fastify.post("/api/admin/send-otp", async (req, reply) => {
+  const { phone } = req.body || {};
+  if (!phone) {
+    reply.status(400);
+    return { status: "error", message: "Phone number is required." };
+  }
+
   const recipientPhone = process.env.GREEN_API_RECIPIENT_PHONE || process.env.CALLMEBOT_PHONE;
   if (!recipientPhone) {
     reply.status(500);
     return { status: "error", message: "Recipient phone is not configured in the backend environment." };
+  }
+
+  const cleanInputPhone = phone.replace(/[^0-9]/g, '');
+  const cleanAdminPhone = recipientPhone.replace(/[^0-9]/g, '');
+
+  if (cleanInputPhone.length < 10 || cleanAdminPhone.length < 10 || cleanInputPhone.slice(-10) !== cleanAdminPhone.slice(-10)) {
+    reply.status(401);
+    return { status: "error", message: "Access denied. Unauthorized phone number." };
   }
 
   // Generate 6-digit numeric OTP
