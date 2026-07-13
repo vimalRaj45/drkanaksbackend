@@ -343,12 +343,9 @@ function generateSequenceToken(dateStr, count) {
 
 /* ---------------- ROUTES ---------------- */
 
-// Serve Admin Panel (Resolves file:// CORS issues)
+// Info route for Admin Panel
 fastify.get("/admin", async (req, reply) => {
-  const fs = require('fs');
-  const path = require('path');
-  const html = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8');
-  reply.type('text/html').send(html);
+  return { status: "success", message: "React Admin Panel is served from the React frontend application client under the '/admin' route." };
 });
 
 
