@@ -45,9 +45,29 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// ✅ CORS
+// ✅ CORS (Strictly Restricted Origins)
 fastify.register(require("@fastify/cors"), {
-  origin: "*"
+  origin: (origin, cb) => {
+    if (!origin) {
+      cb(null, true);
+      return;
+    }
+    const host = origin.toLowerCase();
+    const isAllowed = 
+      host.includes("localhost") || 
+      host.includes("127.0.0.1") || 
+      host.includes("github.io") || 
+      host.includes("drkankas") ||
+      host.includes("drkanak");
+      
+    if (isAllowed) {
+      cb(null, true);
+    } else {
+      cb(new Error("CORS Policy Violation: Origin not trusted"), false);
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 });
 
 /* ---------------- DB INIT ---------------- */
@@ -567,32 +587,55 @@ fastify.get("/appointments", async (req, reply) => {
 });
 
 // 4.1 GET MY APPOINTMENTS (PUBLIC/USER)
-fastify.get("/my-appointments/:phone", async (req) => {
+fastify.get("/my-appointments/:phone", async (req, reply) => {
   const { phone } = req.params;
+  const { secret_key } = req.query;
 
-  const query = `
-    SELECT * FROM (
-      SELECT *, 
-             COALESCE(appointment_date::TEXT, date::TEXT) as synced_date, 
-             COALESCE(appointment_time::TEXT, time::TEXT) as synced_time 
-      FROM appointments 
-      WHERE phone = $1
-    ) AS results
-    ORDER BY synced_date DESC, synced_time ASC`;
+  if (!secret_key) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized. secret_key query parameter is required." };
+  }
 
-  const data = await pool.query(query, [phone]);
+  try {
+    const userRes = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (userRes.rows.length === 0) {
+      reply.status(404);
+      return { status: "error", message: "Patient profile not found." };
+    }
 
-  // Map synced_date back to date for frontend compatibility
-  const rows = data.rows.map(row => ({
-    ...row,
-    date: row.synced_date,
-    time: row.synced_time
-  }));
+    if (userRes.rows[0].id !== secret_key) {
+      reply.status(401);
+      return { status: "error", message: "Unauthorized. Invalid secret key." };
+    }
 
-  return {
-    status: "success",
-    data: rows
-  };
+    const query = `
+      SELECT * FROM (
+        SELECT *, 
+               COALESCE(appointment_date::TEXT, date::TEXT) as synced_date, 
+               COALESCE(appointment_time::TEXT, time::TEXT) as synced_time 
+        FROM appointments 
+        WHERE phone = $1
+      ) AS results
+      ORDER BY synced_date DESC, synced_time ASC`;
+
+    const data = await pool.query(query, [phone]);
+
+    // Map synced_date back to date for frontend compatibility
+    const rows = data.rows.map(row => ({
+      ...row,
+      date: row.synced_date,
+      time: row.synced_time
+    }));
+
+    return {
+      status: "success",
+      data: rows
+    };
+  } catch (err) {
+    req.log.error(err, "Safe fetch appointments error");
+    reply.status(500);
+    return { status: "error", message: "Failed to safely retrieve appointments." };
+  }
 });
 
 // 5. ADMIN DASHBOARD STATS
