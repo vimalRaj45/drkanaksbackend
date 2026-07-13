@@ -686,7 +686,7 @@ fastify.post("/update-status", async (req, reply) => {
     query += `, vitals = $${params.length}`;
   }
 
-  if (status === 'CANCELLED' && cancel_reason) {
+  if (cancel_reason !== undefined) {
     params.push(cancel_reason);
     query += `, cancel_reason = $${params.length}`;
   }

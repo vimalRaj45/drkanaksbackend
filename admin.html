@@ -654,7 +654,35 @@
             <div class="field-value problems" id="pModalMessage">—</div>
         </div>
 
-        <button class="submit-btn" onclick="closePatientModal()" style="height:38px; margin-top:10px;">Close Profile</button>
+        <div style="border-top: 1px solid var(--border); margin-top: 15px; padding-top: 15px;">
+            <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--primary);">Doctor Actions</div>
+            
+            <div class="modal-grid">
+                <div class="field-group">
+                    <label class="field-label">Status</label>
+                    <select id="pModalEditStatus" class="form-control" style="height: 38px; padding: 0 0.5rem; font-weight: 600; font-size: 0.8rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 6px;">
+                        <option value="PENDING">PENDING</option>
+                        <option value="CONFIRMED">CONFIRMED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Re-plan / Suggestion</label>
+                    <input type="text" id="pModalEditSuggestion" class="form-control" placeholder="e.g. Next Mon" style="height: 38px; padding: 0 0.5rem; font-size: 0.8rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 6px;">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label class="field-label">Clinical Reason / Visit Guidance</label>
+                <textarea id="pModalEditReason" class="form-control" placeholder="Clinical notes, guidance or reason..." style="height: 60px; font-size: 0.8rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; resize: none; width: 100%; outline: none;"></textarea>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+            <button class="submit-btn" onclick="savePatientModalChanges()" id="pModalSaveBtn" style="height:38px; flex: 1;">Save Changes</button>
+            <button class="submit-btn" onclick="closePatientModal()" style="height:38px; flex: 1; background: none; border: 1px solid var(--border); color: var(--text-muted);">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -906,10 +934,51 @@
         document.getElementById('pModalCreated').innerText = formatCreatedTime(apt.created_at);
         document.getElementById('pModalService').innerText = apt.service;
         document.getElementById('pModalMessage').innerText = apt.message || 'No message provided.';
+        
+        document.getElementById('pModalEditStatus').value = apt.status || 'PENDING';
+        document.getElementById('pModalEditSuggestion').value = apt.suggestion || '';
+        document.getElementById('pModalEditReason').value = apt.cancel_reason || '';
+        document.getElementById('patientModal').setAttribute('data-apt-id', apt.id);
+        
         document.getElementById('patientModal').classList.add('show');
     }
     function closePatientModal() {
         document.getElementById('patientModal').classList.remove('show');
+    }
+
+    async function savePatientModalChanges() {
+        const id = document.getElementById('patientModal').getAttribute('data-apt-id');
+        const status = document.getElementById('pModalEditStatus').value;
+        const suggestion = document.getElementById('pModalEditSuggestion').value.trim();
+        const cancel_reason = document.getElementById('pModalEditReason').value.trim();
+        
+        const saveBtn = document.getElementById('pModalSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
+        
+        const res = await apiCall('/update-status', 'POST', {
+            appointment_id: id,
+            status,
+            suggestion,
+            cancel_reason
+        });
+        
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Save Changes';
+        
+        if (res && res.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved',
+                text: 'Appointment details updated successfully.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            closePatientModal();
+            refreshData();
+        } else {
+            Swal.fire('Failed', res ? res.message : 'Could not save updates.', 'error');
+        }
     }
 
     /* ========== BANNERS ========== */
