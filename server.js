@@ -1172,8 +1172,14 @@ fastify.post("/api/upload", async (req, reply) => {
     const imageId = result.rows[0].id;
 
     // Construct absolute URL mapping to Postgres retrieval
-    const protocol = req.protocol || 'http';
     const host = req.headers.host || 'localhost:3000';
+    let protocol = req.protocol || 'http';
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    if (forwardedProto) {
+      protocol = forwardedProto;
+    } else if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      protocol = 'https';
+    }
     const fileUrl = `${protocol}://${host}/api/images/${imageId}`;
 
     return { status: "success", url: fileUrl };
