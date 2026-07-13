@@ -455,9 +455,36 @@ fastify.post("/book", async (req) => {
 });
 
 // 3.1 FEEDBACK ROUTE (New)
-fastify.post("/feedback", async (req) => {
-  const { rating, feedback, name, source } = req.body;
+fastify.post("/feedback", async (req, reply) => {
+  const { rating, feedback, name, source, turnstile_token } = req.body;
   const id = uuidv4();
+
+  // --- Validate Turnstile captcha ---
+  if (!turnstile_token) {
+    reply.status(400);
+    return { status: "error", message: "Security verification token is missing. Please complete Turnstile challenge." };
+  }
+
+  try {
+    const verificationUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    const verifyRes = await fetch(verificationUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `secret=0x4AAAAAAD1KgE5pVqbiJ73C0twICu0ayNU&response=${encodeURIComponent(turnstile_token)}`
+    });
+
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      reply.status(400);
+      return { status: "error", message: "Security challenge verification failed. Please try again." };
+    }
+  } catch (verifyErr) {
+    req.log.error(verifyErr, "Turnstile Verification Error");
+    reply.status(500);
+    return { status: "error", message: "Internal server error during bot verification." };
+  }
 
   try {
     // Basic logging of feedback, can be expanded to DB table later
@@ -1163,7 +1190,34 @@ fastify.get("/api/images/:id", async (req, reply) => {
 
 // POST /api/book  →  Create appointment without payment (Free Flow)
 fastify.post("/api/book", async (req, reply) => {
-  const { name, phone, appointment_date, appointment_time, service, message } = req.body;
+  const { name, phone, appointment_date, appointment_time, service, message, turnstile_token } = req.body;
+
+  // --- Validate Turnstile captcha ---
+  if (!turnstile_token) {
+    reply.status(400);
+    return { status: "error", message: "Security verification token is missing. Please complete Turnstile challenge." };
+  }
+
+  try {
+    const verificationUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    const verifyRes = await fetch(verificationUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `secret=0x4AAAAAAD1KgE5pVqbiJ73C0twICu0ayNU&response=${encodeURIComponent(turnstile_token)}`
+    });
+
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      reply.status(400);
+      return { status: "error", message: "Security challenge verification failed. Please try again." };
+    }
+  } catch (verifyErr) {
+    req.log.error(verifyErr, "Turnstile Verification Error");
+    reply.status(500);
+    return { status: "error", message: "Internal server error during bot verification." };
+  }
 
   // --- Validate required fields ---
   if (!name || !phone || !appointment_date || !appointment_time) {
