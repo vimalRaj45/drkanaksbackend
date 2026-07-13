@@ -155,6 +155,15 @@ async function dbInit() {
         mime_type TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS feedback (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        rating INT NOT NULL,
+        feedback TEXT,
+        name TEXT,
+        source TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // 2. Indexes for performance
@@ -507,14 +516,16 @@ fastify.post("/feedback", async (req, reply) => {
   }
 
   try {
-    // Basic logging of feedback, can be expanded to DB table later
     fastify.log.info({ rating, feedback, name, source }, "Feedback received");
 
-    // If you have a feedback table:
-    // await pool.query("INSERT INTO feedback (id, rating, feedback, source) VALUES ($1, $2, $3, $4)", [id, rating, feedback, source]);
+    await pool.query(
+      "INSERT INTO feedback (id, rating, feedback, name, source) VALUES ($1, $2, $3, $4, $5)",
+      [id, rating, feedback, name, source]
+    );
 
     return { status: "success", message: "Feedback received. Thank you!" };
   } catch (e) {
+    req.log.error(e, "Feedback save error");
     return { status: "error", message: "Failed to save feedback" };
   }
 });
@@ -1480,6 +1491,41 @@ fastify.post("/api/settings", async (request, reply) => {
     fastify.log.error(err, `POST /api/settings Failure`);
     reply.status(500);
     return { success: false, message: err.message };
+  }
+});
+
+// GET ALL FEEDBACK/REVIEWS (ADMIN ONLY)
+fastify.get("/api/feedback", async (req, reply) => {
+  const { admin_token } = req.query;
+  if (admin_token !== ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+
+  try {
+    const result = await pool.query("SELECT * FROM feedback ORDER BY created_at DESC");
+    return { status: "success", data: result.rows };
+  } catch (err) {
+    reply.status(500);
+    return { status: "error", message: "Failed to retrieve feedback data" };
+  }
+});
+
+// DELETE FEEDBACK/REVIEW (ADMIN ONLY)
+fastify.delete("/api/feedback/:id", async (req, reply) => {
+  const { id } = req.params;
+  const { admin_token } = req.query;
+  if (admin_token !== ADMIN_TOKEN) {
+    reply.status(401);
+    return { status: "error", message: "Unauthorized" };
+  }
+
+  try {
+    await pool.query("DELETE FROM feedback WHERE id = $1", [id]);
+    return { status: "success", message: "Feedback deleted successfully" };
+  } catch (err) {
+    reply.status(500);
+    return { status: "error", message: "Failed to delete feedback" };
   }
 });
 
