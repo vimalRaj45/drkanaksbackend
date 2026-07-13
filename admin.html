@@ -674,8 +674,13 @@
             </div>
             
             <div class="field-group">
-                <label class="field-label">Clinical Reason / Visit Guidance</label>
+                <label class="field-label">Clinical Reason / Visit Guidance (Public)</label>
                 <textarea id="pModalEditReason" class="form-control" placeholder="Clinical notes, guidance or reason..." style="height: 60px; font-size: 0.8rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; resize: none; width: 100%; outline: none;"></textarea>
+            </div>
+
+            <div class="field-group" style="margin-top: 10px;">
+                <label class="field-label">Private Reference Notes (Internal Only)</label>
+                <textarea id="pModalEditNotes" class="form-control" placeholder="Private reference notes, patient history notes..." style="height: 60px; font-size: 0.8rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; resize: none; width: 100%; outline: none;"></textarea>
             </div>
         </div>
 
@@ -938,6 +943,7 @@
         document.getElementById('pModalEditStatus').value = apt.status || 'PENDING';
         document.getElementById('pModalEditSuggestion').value = apt.suggestion || '';
         document.getElementById('pModalEditReason').value = apt.cancel_reason || '';
+        document.getElementById('pModalEditNotes').value = apt.consultation_notes || '';
         document.getElementById('patientModal').setAttribute('data-apt-id', apt.id);
         
         document.getElementById('patientModal').classList.add('show');
@@ -951,6 +957,7 @@
         const status = document.getElementById('pModalEditStatus').value;
         const suggestion = document.getElementById('pModalEditSuggestion').value.trim();
         const cancel_reason = document.getElementById('pModalEditReason').value.trim();
+        const consultation_notes = document.getElementById('pModalEditNotes').value.trim();
         
         const saveBtn = document.getElementById('pModalSaveBtn');
         saveBtn.disabled = true;
@@ -960,7 +967,8 @@
             appointment_id: id,
             status,
             suggestion,
-            cancel_reason
+            cancel_reason,
+            consultation_notes
         });
         
         saveBtn.disabled = false;
