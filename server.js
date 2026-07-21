@@ -833,12 +833,12 @@ fastify.post("/update-status", async (req, reply) => {
 
   if (date !== undefined && date !== "") {
     params.push(date);
-    query += `, date = $${params.length}, appointment_date = $${params.length}`;
+    query += `, date = $${params.length}::TEXT, appointment_date = $${params.length}::DATE`;
   }
 
   if (time !== undefined && time !== "") {
     params.push(time);
-    query += `, time = $${params.length}, appointment_time = $${params.length}`;
+    query += `, time = $${params.length}::TEXT, appointment_time = $${params.length}::TIME`;
   }
 
   // Automatically clear reschedule request if reschedule date/time is provided, or status is updated, or explicitly requested
