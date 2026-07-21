@@ -7,7 +7,6 @@ self.addEventListener('push', function(event) {
     body: data.body || 'Your appointment has been updated.',
     icon: data.icon || 'https://drkanaks.com/icon-192.png', 
     badge: data.badge || 'https://drkanaks.com/badge.png',
-    image: data.image || 'https://drkanaks.com/follicle.jpg',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || 'https://drkanaks.com/profile',
@@ -28,19 +27,38 @@ self.addEventListener('notificationclick', function(event) {
   
   if (event.action === 'view-profile') {
     targetUrl = 'https://drkanaks.com/profile';
+  } else if (event.action === 'book-new') {
+    targetUrl = 'https://drkanaks.com/book';
   }
 
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url === targetUrl && 'focus' in client) {
-          return client.focus();
+  // Ensure absolute URL
+  const urlToOpen = new URL(targetUrl, self.location.origin).href;
+
+  const promiseChain = clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true
+  }).then((windowClients) => {
+    let matchingClient = null;
+
+    // Professional window matching: match any client from the same origin
+    const targetOrigin = new URL(urlToOpen).origin;
+    for (let i = 0; i < windowClients.length; i++) {
+        const windowClient = windowClients[i];
+        const clientOrigin = new URL(windowClient.url).origin;
+        if (clientOrigin === targetOrigin) {
+            matchingClient = windowClient;
+            break;
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
-  );
+    }
+
+    if (matchingClient) {
+        // Navigate the existing tab to the correct sub-route and focus it
+        return matchingClient.navigate(urlToOpen).then(client => client.focus());
+    } else {
+        // If no tab is open, open a new window
+        return clients.openWindow(urlToOpen);
+    }
+  });
+
+  event.waitUntil(promiseChain);
 });
