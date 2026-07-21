@@ -211,6 +211,7 @@ async function dbInit() {
       ["message", "TEXT"],
       ["consultation_notes", "TEXT"],
       ["vitals", "JSONB DEFAULT '{}'"],
+      ["reschedule_request", "TEXT"],
       ["updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"]
     ];
 
@@ -649,6 +650,62 @@ fastify.get("/my-appointments/:phone", async (req, reply) => {
   }
 });
 
+// 4.2 PATIENT REQUEST RESCHEDULE
+fastify.post("/request-reschedule", async (req, reply) => {
+  const { appointment_id, secret_key, reschedule_request } = req.body;
+
+  if (!appointment_id || !secret_key || !reschedule_request) {
+    reply.status(400);
+    return { status: "error", message: "Missing required fields: appointment_id, secret_key, or reschedule_request" };
+  }
+
+  try {
+    // Verify that the user is the owner of this appointment
+    const aptRes = await pool.query("SELECT user_id, phone, name FROM appointments WHERE id = $1", [appointment_id]);
+    if (aptRes.rows.length === 0) {
+      reply.status(404);
+      return { status: "error", message: "Appointment not found" };
+    }
+
+    const apt = aptRes.rows[0];
+    if (apt.user_id !== secret_key) {
+      reply.status(401);
+      return { status: "error", message: "Unauthorized. Secret key does not match this appointment." };
+    }
+
+    // Update the reschedule request in the DB
+    await pool.query(
+      "UPDATE appointments SET reschedule_request = $1, status = 'PENDING', updated_at = NOW() WHERE id = $2",
+      [reschedule_request, appointment_id]
+    );
+
+    // Send WhatsApp notification if configured
+    try {
+      const displayMsg = `*Patient Reschedule Request!* 🔔\n\n` +
+        `*Patient:* ${apt.name}\n` +
+        `*Phone:* ${apt.phone}\n` +
+        `*Request:* "${reschedule_request}"\n\n` +
+        `_Please visit the Admin Portal to reschedule this patient._`;
+      
+      const recipientPhone = process.env.GREEN_API_RECIPIENT_PHONE || process.env.CALLMEBOT_PHONE;
+      if (recipientPhone) {
+        await sendRawWhatsapp(recipientPhone, displayMsg);
+      }
+    } catch (waErr) {
+      console.error("WhatsApp notification for reschedule request failed:", waErr);
+    }
+
+    return {
+      status: "success",
+      message: "Reschedule request submitted successfully."
+    };
+  } catch (err) {
+    req.log.error(err, "Reschedule request submission failure");
+    reply.status(500);
+    return { status: "error", message: "Failed to submit reschedule request." };
+  }
+});
+
 // 5. ADMIN DASHBOARD STATS
 fastify.get("/admin/stats", async (req, reply) => {
   const { admin_token } = req.query;
@@ -738,7 +795,7 @@ fastify.get("/public-stats", async () => {
 
 // 6. UPDATE STATUS & CLINICAL NOTES (ADMIN/DOCTOR)
 fastify.post("/update-status", async (req, reply) => {
-  const { appointment_id, status, admin_token, cancel_reason, suggestion, consultation_notes, vitals } = req.body;
+  const { appointment_id, status, admin_token, cancel_reason, suggestion, consultation_notes, vitals, date, time, clear_reschedule } = req.body;
 
   if (admin_token !== ADMIN_TOKEN) {
     reply.status(401);
@@ -772,6 +829,21 @@ fastify.post("/update-status", async (req, reply) => {
   if (suggestion) {
     params.push(suggestion);
     query += `, suggestion = $${params.length}`;
+  }
+
+  if (date !== undefined && date !== "") {
+    params.push(date);
+    query += `, date = $${params.length}, appointment_date = $${params.length}`;
+  }
+
+  if (time !== undefined && time !== "") {
+    params.push(time);
+    query += `, time = $${params.length}, appointment_time = $${params.length}`;
+  }
+
+  // Automatically clear reschedule request if reschedule date/time is provided, or status is updated, or explicitly requested
+  if (date || time || clear_reschedule || status === 'CONFIRMED' || status === 'COMPLETED' || status === 'CANCELLED') {
+    query += `, reschedule_request = NULL`;
   }
 
   params.push(appointment_id);
