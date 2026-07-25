@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>Hosting Stack & Upgrade Guide · Dr. Kanak's Clinic</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <!-- Outfit font -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Outfit', sans-serif; background: #F0F6FC; }
+    .card-hover:hover { transform: translateY(-2px); transition: all 0.2s ease; }
+    @media print {
+      body { background: white; padding: 0; margin: 0; }
+      .no-print, .no-print * { display: none !important; }
+      .print\:shadow-none { box-shadow: none !important; }
+      .print\:border-0 { border: 0 !important; }
+      .print\:p-2 { padding: 0.5rem !important; }
+      .print\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+      @page { size: A4; margin: 0.8cm; }
+    }
+  </style>
+</head>
+<body class="p-3 md:p-6 bg-[#F0F6FC] text-[#0D1B2A] print:bg-white print:p-0">
+
+  <!-- print button and navigation back -->
+  <div class="max-w-4xl mx-auto mb-4 flex justify-between items-center no-print">
+    <a href="quotation-bill.html" class="inline-flex items-center gap-2 text-sm font-semibold text-[#1B6CA8] hover:text-[#0B2545] transition">
+      <i class="bi bi-arrow-left"></i> Back to Quotation
+    </a>
+    <button onclick="window.print()" class="inline-flex items-center gap-2 bg-[#1B6CA8] hover:bg-[#1A5276] text-white text-sm font-semibold py-2.5 px-5 rounded-lg transition active:scale-95">
+      <i class="bi bi-printer-fill"></i> Print Guide
+    </button>
+  </div>
+
+  <!-- main document card -->
+  <div class="max-w-4xl mx-auto bg-white border border-[#C8DCF0] shadow-lg shadow-[#0B2545]/5 rounded-lg overflow-hidden print:shadow-none print:border-0">
+    
+    <!-- top stripe -->
+    <div class="h-[5px] w-full bg-gradient-to-r from-[#0B2545] via-[#1B6CA8] to-[#0EA5E9] print:h-[3px]"></div>
+
+    <!-- header -->
+    <div class="px-6 py-6 border-b border-[#D6E8F7] bg-gradient-to-b from-[#F7FAFD] to-white md:px-8 print:px-4 print:py-3">
+      <div class="flex flex-wrap justify-between items-start gap-4">
+        <div>
+          <span class="bg-[#EBF4FB] text-[#1B6CA8] text-[9.5px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[#D6E8F7]"><i class="bi bi-cloud-check-fill mr-1"></i> Infrastructure Stack</span>
+          <h1 class="text-2xl font-black text-[#0B2545] mt-2 tracking-tight print:text-xl">Clinic Web Suite · Hosting & Upgrade Guide</h1>
+          <p class="text-xs text-[#2E4057] mt-1 font-medium">Prepared by Vimal Raj S & Suruthika R for Dr. Kanak's Clinic</p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-bold text-[#22C55E] bg-[#F0FDF4] border border-[#DCFCE7] py-1.5 px-3 rounded-full inline-flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span> Active Setup: 100% Free
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="p-6 border-b border-[#D6E8F7] md:p-8 print:p-4 bg-[#FAFCFF]">
+      <h2 class="text-xs font-extrabold uppercase tracking-widest text-[#1B6CA8] flex items-center gap-1 mb-2">
+        <i class="bi bi-info-circle-fill"></i> Executive Summary
+      </h2>
+      <p class="text-xs text-[#2E4057] leading-relaxed font-medium">
+        The clinic's web suite is currently deployed on modern, highly secure, serverless cloud infrastructure configured under permanent <strong>free hosting tiers ($0/month)</strong>. This allows the system to run indefinitely with zero maintenance fees. However, free cloud platforms include resource limits and "autosuspend/sleep" functions when inactive. This document outlines your current free limits, details when you should consider upgrading, and provides cost-effective step-by-step guidance.
+      </p>
+    </div>
+
+    <!-- The Stack Details -->
+    <div class="p-6 md:p-8 print:p-4 space-y-6">
+      <h2 class="text-xs font-extrabold uppercase tracking-widest text-[#1B6CA8] flex items-center gap-1.5 border-b border-[#D6E8F7] pb-2">
+        <i class="bi bi-stack"></i> Detailed Stack Breakdown
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-1">
+        
+        <!-- Frontend -->
+        <div class="border border-[#D6E8F7] rounded-lg p-4 bg-white flex flex-col justify-between card-hover print:p-3">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-[#FDF2E9] text-[#EA580C] flex items-center justify-center text-lg"><i class="bi bi-browser-chrome"></i></div>
+              <div>
+                <h3 class="text-xs font-extrabold text-[#0B2545]">Cloudflare Pages</h3>
+                <span class="text-[9px] font-bold text-orange-600 uppercase tracking-wide">Frontend UI</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-[#2E4057] leading-relaxed mb-3">
+              Serves the interactive Patient Portal and Admin Board globally via ultra-fast Edge servers.
+            </p>
+            <div class="border-t border-[#F0F6FC] pt-2 mt-2 space-y-1">
+              <div class="text-[10px]"><strong class="text-[#0B2545]">Free Limits:</strong> Unlimited bandwidth, unlimited site visits.</div>
+              <div class="text-[10px]"><strong class="text-[#0B2545]">Upgrade trigger:</strong> Practically never. The free plan supports millions of monthly visitors.</div>
+            </div>
+          </div>
+          <div class="bg-[#F8FAFC] border border-[#E2E8F0] text-[#475569] text-[9.5px] font-bold text-center py-1.5 rounded mt-4">
+            Upgrade Required: <strong class="text-[#0F172A]">Never</strong>
+          </div>
+        </div>
+
+        <!-- Backend -->
+        <div class="border border-[#D6E8F7] rounded-lg p-4 bg-white flex flex-col justify-between card-hover print:p-3">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center text-lg"><i class="bi bi-hdd-network"></i></div>
+              <div>
+                <h3 class="text-xs font-extrabold text-[#0B2545]">Render API Server</h3>
+                <span class="text-[9px] font-bold text-indigo-600 uppercase tracking-wide">Backend Web Service</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-[#2E4057] leading-relaxed mb-3">
+              Handles appointment bookings, database connections, notifications, and verification logins.
+            </p>
+            <div class="border-t border-[#F0F6FC] pt-2 mt-2 space-y-1">
+              <div class="text-[10px]"><strong class="text-[#0B2545]">Free Limits:</strong> Service spins down (sleeps) after 15 mins of inactive time.</div>
+              <div class="text-[10px] text-amber-700 font-semibold"><i class="bi bi-exclamation-triangle"></i> Delay: First visitor after a break waits 50s for wake-up.</div>
+            </div>
+          </div>
+          <div class="bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] text-[9.5px] font-bold text-center py-1.5 rounded mt-4">
+            Recommended: <strong class="text-[#1E40AF]">Starter Tier ($7/mo)</strong>
+          </div>
+        </div>
+
+        <!-- Database -->
+        <div class="border border-[#D6E8F7] rounded-lg p-4 bg-white flex flex-col justify-between card-hover print:p-3">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-[#ECFDF5] text-[#059669] flex items-center justify-center text-lg"><i class="bi bi-database"></i></div>
+              <div>
+                <h3 class="text-xs font-extrabold text-[#0B2545]">Neon PG Database</h3>
+                <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">Relational Database</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-[#2E4057] leading-relaxed mb-3">
+              Securely holds patient profiles, clinical visits, login keys, and booked slots.
+            </p>
+            <div class="border-t border-[#F0F6FC] pt-2 mt-2 space-y-1">
+              <div class="text-[10px]"><strong class="text-[#0B2545]">Free Limits:</strong> 3 GB storage. Compute autosuspends after 5 mins of inactive time.</div>
+              <div class="text-[10px] text-amber-700 font-semibold"><i class="bi bi-exclamation-triangle"></i> Delay: First query after sleep takes 3-5 seconds to load.</div>
+            </div>
+          </div>
+          <div class="bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] text-[9.5px] font-bold text-center py-1.5 rounded mt-4">
+            Optional: <strong class="text-[#1E40AF]">Launch Tier ($19/mo)</strong>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Upgrade Triggers -->
+    <div class="px-6 pb-6 md:px-8 print:px-4">
+      <h2 class="text-xs font-extrabold uppercase tracking-widest text-[#1B6CA8] flex items-center gap-1.5 border-b border-[#D6E8F7] pb-2 mb-4">
+        <i class="bi bi-signpost-split-fill"></i> When Should You Upgrade?
+      </h2>
+
+      <div class="relative pl-6 border-l-2 border-[#D6E8F7] space-y-6 text-xs text-[#2E4057]">
+        <!-- step 1 -->
+        <div class="relative">
+          <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#1B6CA8] border-2 border-white flex items-center justify-center text-white text-[9px]"><i class="bi bi-check"></i></div>
+          <h4 class="font-bold text-[#0B2545] text-sm">Phase 1: Initial Growth (0 - 500 Patients)</h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>Stay on the FREE plan.</strong> At this stage, the patient flow is sparse. The 50-second wake-up delay on the first API call of the session is easily managed, and 3 GB of database storage is massive (capable of storing 15,000+ patient records).
+          </p>
+        </div>
+        <!-- step 2 -->
+        <div class="relative">
+          <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#1B6CA8] border-2 border-white flex items-center justify-center text-white text-[9px]"><i class="bi bi-activity"></i></div>
+          <h4 class="font-bold text-[#0B2545] text-sm">Phase 2: Active Daily Appointments (500+ Patients)</h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>Upgrade Render API ($7/mo)</strong> to eliminate the cold-start delay. This keeps the backend server running 24/7. Visitors booking appointments throughout the day will experience instant page response times instead of occasional delays.
+          </p>
+        </div>
+        <!-- step 3 -->
+        <div class="relative">
+          <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#0B2545] border-2 border-white flex items-center justify-center text-white text-[9px]"><i class="bi bi-database-fill-gear"></i></div>
+          <h4 class="font-bold text-[#0B2545] text-sm">Phase 3: Scale & Backup (Over 3,000 Patients or High Data Volume)</h4>
+          <p class="mt-1 leading-relaxed">
+            <strong>Upgrade Neon Database ($19/mo)</strong> if storage approaches 3 GB or you want automated daily backups with point-in-time recovery. It also ensures the database is hot and ready instantly at any millisecond.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Comparison Table -->
+    <div class="px-6 pb-6 md:px-8 print:px-4">
+      <h2 class="text-xs font-extrabold uppercase tracking-widest text-[#1B6CA8] flex items-center gap-1.5 border-b border-[#D6E8F7] pb-2 mb-4">
+        <i class="bi bi-grid-3x3-gap-fill"></i> Cost Plan Comparison
+      </h2>
+      <div class="overflow-x-auto border border-[#D6E8F7] rounded-lg">
+        <table class="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr class="bg-[#0B2545] text-white uppercase text-[9px] tracking-wider">
+              <th class="py-2.5 px-4 font-bold">Service Component</th>
+              <th class="py-2.5 px-4 font-bold">Free Plan Setup</th>
+              <th class="py-2.5 px-4 font-bold text-[#0EA5E9]">Upgraded Plan Setup</th>
+              <th class="py-2.5 px-4 font-bold text-right">Upgrade Cost</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#D6E8F7] text-[#2E4057]">
+            <tr class="hover:bg-[#F8FAFC]">
+              <td class="py-3 px-4 font-bold text-[#0B2545]">Cloudflare Frontend</td>
+              <td class="py-3 px-4">Free tier (unlimited visits)</td>
+              <td class="py-3 px-4 font-semibold text-[#0EA5E9]">Same Free tier (highly sufficient)</td>
+              <td class="py-3 px-4 text-right font-bold">₹ 0 / month</td>
+            </tr>
+            <tr class="hover:bg-[#F8FAFC]">
+              <td class="py-3 px-4 font-bold text-[#0B2545]">Render API Service</td>
+              <td class="py-3 px-4">Sleeps after 15 min inactivity</td>
+              <td class="py-3 px-4 font-semibold text-indigo-700">24/7 Always Active (No cold start)</td>
+              <td class="py-3 px-4 text-right font-bold text-[#1B6CA8]">$7 / mo (≈ ₹600)</td>
+            </tr>
+            <tr class="hover:bg-[#F8FAFC]">
+              <td class="py-3 px-4 font-bold text-[#0B2545]">Neon DB Database</td>
+              <td class="py-3 px-4">3 GB storage + 5 min compute suspends</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">Scalable storage + 24/7 compute + Backups</td>
+              <td class="py-3 px-4 text-right font-bold text-[#1B6CA8]">$19 / mo (≈ ₹1600)</td>
+            </tr>
+            <tr class="bg-[#F0F6FC] font-bold text-[#0B2545]">
+              <td class="py-3 px-4" colspan="2">TOTAL RUNNING COST</td>
+              <td class="py-3 px-4 text-[#0B2545] font-extrabold">Professional Production Stack</td>
+              <td class="py-3 px-4 text-right text-base text-[#0B2545] font-black">$26 / mo (≈ ₹2200)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- How to Upgrade Steps -->
+    <div class="px-6 pb-6 md:px-8 print:px-4">
+      <h2 class="text-xs font-extrabold uppercase tracking-widest text-[#1B6CA8] flex items-center gap-1.5 border-b border-[#D6E8F7] pb-2 mb-4">
+        <i class="bi bi-gear-fill"></i> How to Upgrade (Step-by-Step)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs print:grid-cols-1">
+        <div class="bg-[#FAFCFF] border border-[#D6E8F7] p-4 rounded-lg">
+          <h4 class="font-bold text-[#0B2545] mb-2 flex items-center gap-1"><span class="w-5 h-5 rounded-full bg-[#1B6CA8] text-white flex items-center justify-center text-[10px]">1</span> Upgrade Render Backend API</h4>
+          <ol class="list-decimal pl-4 space-y-1 text-[#2E4057]">
+            <li>Log into the Render Dashboard (<a href="https://dashboard.render.com" target="_blank" class="text-[#1B6CA8] underline">render.com</a>) using the project account.</li>
+            <li>Select the active **Web Service** representing `drkanaksbackend`.</li>
+            <li>Go to the **Settings** tab.</li>
+            <li>Locate **Instance Type** and click **Upgrade/Edit**.</li>
+            <li>Select the **Starter** instance type ($7 USD / month).</li>
+            <li>Add billing/payment method details and save changes.</li>
+          </ol>
+        </div>
+        <div class="bg-[#FAFCFF] border border-[#D6E8F7] p-4 rounded-lg">
+          <h4 class="font-bold text-[#0B2545] mb-2 flex items-center gap-1"><span class="w-5 h-5 rounded-full bg-[#0B2545] text-white flex items-center justify-center text-[10px]">2</span> Upgrade Neon PostgreSQL Database</h4>
+          <ol class="list-decimal pl-4 space-y-1 text-[#2E4057]">
+            <li>Log into the Neon Console (<a href="https://console.neon.tech" target="_blank" class="text-[#1B6CA8] underline">neon.tech</a>).</li>
+            <li>Open the active database project.</li>
+            <li>Navigate to the **Plans** or **Billing** tab in the sidebar.</li>
+            <li>Choose the **Launch Plan** ($19 USD / month) and subscribe.</li>
+            <li>No code changes or DNS updates are required; the upgrade is applied instantly in-place.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div class="bg-[#0B2545] px-6 py-4 flex flex-wrap justify-between items-center gap-2 text-white print:text-[9.5px] print:py-2 print:px-4">
+      <div>
+        <p class="text-[9px] text-white/60"><i class="bi bi-briefcase-fill mr-1"></i> Infrastructure Stack Consultation</p>
+        <p class="text-[8px] text-white/40">Prepared for Dr. Kanak's Clinic</p>
+      </div>
+      <span class="text-[#0EA5E9] text-xs flex items-center gap-1"><i class="bi bi-heart-fill text-[#F87171]"></i> Thank you</span>
+    </div>
+
+  </div>
+
+</body>
+</html>
