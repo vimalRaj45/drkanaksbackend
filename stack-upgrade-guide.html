@@ -136,12 +136,12 @@
               Securely holds patient profiles, clinical visits, login keys, and booked slots.
             </p>
             <div class="border-t border-[#F0F6FC] pt-2 mt-2 space-y-1">
-              <div class="text-[10px]"><strong class="text-[#0B2545]">Free Limits:</strong> 3 GB storage. Compute autosuspends after 5 mins of inactive time.</div>
+              <div class="text-[10px]"><strong class="text-[#0B2545]">Free Limits:</strong> 0.5 GB storage, 100 CU-hrs monthly per project, sizes up to 2 CU (8 GB RAM).</div>
               <div class="text-[10px] text-amber-700 font-semibold"><i class="bi bi-exclamation-triangle"></i> Delay: First query after sleep takes 3-5 seconds to load.</div>
             </div>
           </div>
           <div class="bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] text-[9.5px] font-bold text-center py-1.5 rounded mt-4">
-            Optional: <strong class="text-[#1E40AF]">Launch Tier ($19/mo)</strong>
+            Optional: <strong class="text-[#1E40AF]">Launch Tier ($15/mo typical spend)</strong>
           </div>
         </div>
 
@@ -160,7 +160,7 @@
           <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#1B6CA8] border-2 border-white flex items-center justify-center text-white text-[9px]"><i class="bi bi-check"></i></div>
           <h4 class="font-bold text-[#0B2545] text-sm">Phase 1: Initial Growth (0 - 500 Patients)</h4>
           <p class="mt-1 leading-relaxed">
-            <strong>Stay on the FREE plan.</strong> At this stage, the patient flow is sparse. The 50-second wake-up delay on the first API call of the session is easily managed, and 3 GB of database storage is massive (capable of storing 15,000+ patient records).
+            <strong>Stay on the FREE plan.</strong> At this stage, the patient flow is sparse. The 50-second wake-up delay on the first API call of the session is easily managed, and 0.5 GB of database storage is massive (capable of storing 2,500+ patient records).
           </p>
         </div>
         <!-- step 2 -->
@@ -174,9 +174,9 @@
         <!-- step 3 -->
         <div class="relative">
           <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#0B2545] border-2 border-white flex items-center justify-center text-white text-[9px]"><i class="bi bi-database-fill-gear"></i></div>
-          <h4 class="font-bold text-[#0B2545] text-sm">Phase 3: Scale & Backup (Over 3,000 Patients or High Data Volume)</h4>
+          <h4 class="font-bold text-[#0B2545] text-sm">Phase 3: Scale & Backup (Over 2,500 Patients or High Data Volume)</h4>
           <p class="mt-1 leading-relaxed">
-            <strong>Upgrade Neon Database ($19/mo)</strong> if storage approaches 3 GB or you want automated daily backups with point-in-time recovery. It also ensures the database is hot and ready instantly at any millisecond.
+            <strong>Upgrade Neon Database ($15/mo typical spend)</strong> if storage approaches 0.5 GB or you want usage-based scaling up to 16 CU (64 GB RAM), 3-day metrics/logs, and automated daily backups with point-in-time recovery.
           </p>
         </div>
       </div>
@@ -212,14 +212,14 @@
             </tr>
             <tr class="hover:bg-[#F8FAFC]">
               <td class="py-3 px-4 font-bold text-[#0B2545]">Neon DB Database</td>
-              <td class="py-3 px-4">3 GB storage + 5 min compute suspends</td>
-              <td class="py-3 px-4 font-semibold text-emerald-700">Scalable storage + 24/7 compute + Backups</td>
-              <td class="py-3 px-4 text-right font-bold text-[#1B6CA8]">$19 / mo (≈ ₹1600)</td>
+              <td class="py-3 px-4">0.5 GB storage, 100 CU-hrs, sizes up to 2 CU</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">Usage scaling (up to 16 CU, 3-day metrics)</td>
+              <td class="py-3 px-4 text-right font-bold text-[#1B6CA8]">$15 / mo typical spend (≈ ₹1250)</td>
             </tr>
             <tr class="bg-[#F0F6FC] font-bold text-[#0B2545]">
               <td class="py-3 px-4" colspan="2">TOTAL RUNNING COST</td>
               <td class="py-3 px-4 text-[#0B2545] font-extrabold">Professional Production Stack</td>
-              <td class="py-3 px-4 text-right text-base text-[#0B2545] font-black">$26 / mo (≈ ₹2200)</td>
+              <td class="py-3 px-4 text-right text-base text-[#0B2545] font-black">$22 / mo (≈ ₹1850)</td>
             </tr>
           </tbody>
         </table>
@@ -249,7 +249,7 @@
             <li>Log into the Neon Console (<a href="https://console.neon.tech" target="_blank" class="text-[#1B6CA8] underline">neon.tech</a>).</li>
             <li>Open the active database project.</li>
             <li>Navigate to the **Plans** or **Billing** tab in the sidebar.</li>
-            <li>Choose the **Launch Plan** ($19 USD / month) and subscribe.</li>
+            <li>Choose the **Launch Plan** ($15 USD / month typical spend) and subscribe.</li>
             <li>No code changes or DNS updates are required; the upgrade is applied instantly in-place.</li>
           </ol>
         </div>
